@@ -27,9 +27,14 @@ class LLMService:
                     {"role": "user", "content": user_message}
                 ],
                 temperature=0.7,
-                max_tokens=150
+                max_tokens=1024
             )
             print("DEBUG: Chat Response Success")
+            
+            # Log reasoning content if available (for debugging R1 models)
+            if hasattr(response.choices[0].message, 'reasoning_content'):
+                 print(f"DEBUG: Reasoning: {response.choices[0].message.reasoning_content[:100]}...")
+                 
             return response.choices[0].message.content.strip()
         except Exception as e:
             logger.error(f"LLM Error: {e}")
@@ -46,7 +51,7 @@ class LLMService:
                     {"role": "user", "content": context}
                 ],
                 temperature=0.8,
-                max_tokens=300
+                max_tokens=2048
             )
             print("DEBUG: Narrative Response Success")
             return response.choices[0].message.content.strip()
