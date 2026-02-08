@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "Qwen/Qwen2.5-Coder-7B-Instruct"
     OPENAI_EMBEDDING_MODEL: str = "Qwen/Qwen3-Embedding-8B"
 
+    # Image Generation (Volcengine/Ark)
+    ARK_API_KEY: str = ""
+    ARK_BASE_URL: str = "https://ark.cn-beijing.volces.com/api/v3"
+    ARK_MODEL_ID: str = "doubao-seedream-4-5-251128"
+
     class Config:
         env_file = ".env"
         case_sensitive = True

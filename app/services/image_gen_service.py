@@ -4,20 +4,16 @@ import mimetypes
 import requests
 from openai import OpenAI
 import logging
+from app.core.config import settings
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Constants
-ARK_API_KEY = "7197ca35-597d-424d-b316-0f6538944936"
-ARK_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
-MODEL_ID = "doubao-seedream-4-5-251128"
-
 class ImageGenerationService:
     def __init__(self):
         self.client = OpenAI(
-            base_url=ARK_BASE_URL,
-            api_key=ARK_API_KEY
+            base_url=settings.ARK_BASE_URL,
+            api_key=settings.ARK_API_KEY
         )
 
     def _get_image_base64(self, image_source: str) -> str:
@@ -113,7 +109,7 @@ class ImageGenerationService:
                 )
             
             response = self.client.images.generate(
-                model=MODEL_ID,
+                model=settings.ARK_MODEL_ID,
                 prompt=prompt,
                 size="2K",
                 response_format="url",
