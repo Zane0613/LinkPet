@@ -1,0 +1,12 @@
+prefix=/data/ext_workspace/taoziyang_ext/linkpet-mvp/frontend/frontend_env
+exec_prefix=${prefix}
+libdir=/data/ext_workspace/taoziyang_ext/linkpet-mvp/frontend/frontend_env/lib
+includedir=/data/ext_workspace/taoziyang_ext/linkpet-mvp/frontend/frontend_env/include
+
+Name: absl_tracing_internal
+Description: Abseil tracing_internal library
+URL: https://abseil.io/
+Version: 20250512
+Requires: absl_base = 20250512
+Libs: -L${libdir}  -labsl_tracing_internal 
+Cflags: -I${includedir} -DNOMINMAX

@@ -8,7 +8,7 @@ from app.models.pet import Pet, PetStatus
 from app.models.user import User
 from app.schemas.pet_schema import PetCreate, PetOut, PetClaim, UserNicknameUpdate, HeatRequest, PetNameUpdate, PetReadDiaryUpdate
 from app.services.game_engine.hatching import calculate_personality, update_hatching_progress, add_heating_time, reset_egg
-from app.services.game_engine.behavior import update_pet_behavior
+from app.services.game_engine.behavior import update_pet_behavior, select_destination, LANDMARKS
 from app.api.deps import get_current_user_id
 
 router = APIRouter()
@@ -115,9 +115,19 @@ def set_pet_name(
         
     pet.name = name_in.name
     
-    # If pet is still in EGG_HATCHED state, move it to SLEEPING
+    # If pet is still in EGG_HATCHED state, move it to TRAVELING immediately
     if pet.status == PetStatus.EGG_HATCHED.value:
-        pet.status = PetStatus.SLEEPING.value
+        pet.status = PetStatus.TRAVELING.value
+        destination = select_destination(pet)
+        pet.current_destination = destination
+        
+        # If it's a landmark, mark as visited
+        if destination in LANDMARKS:
+            visited = list(pet.visited_landmarks or [])
+            if destination not in visited:
+                visited.append(destination)
+                pet.visited_landmarks = visited
+
         pet.last_status_update = int(time.time())
         
     db.commit()

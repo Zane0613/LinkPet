@@ -1,0 +1,12 @@
+prefix=/data/ext_workspace/taoziyang_ext/linkpet-mvp/frontend/frontend_env
+exec_prefix=${prefix}
+libdir=/data/ext_workspace/taoziyang_ext/linkpet-mvp/frontend/frontend_env/lib
+includedir=/data/ext_workspace/taoziyang_ext/linkpet-mvp/frontend/frontend_env/include
+
+Name: absl_absl_check
+Description: Abseil absl_check library
+URL: https://abseil.io/
+Version: 20250512
+Requires: absl_log_internal_check_impl = 20250512
+Libs: -L${libdir}  
+Cflags: -I${includedir} -DNOMINMAX

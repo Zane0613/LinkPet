@@ -1,0 +1,12 @@
+prefix=/data/ext_workspace/taoziyang_ext/linkpet-mvp/frontend/frontend_env
+exec_prefix=${prefix}
+libdir=/data/ext_workspace/taoziyang_ext/linkpet-mvp/frontend/frontend_env/lib
+includedir=/data/ext_workspace/taoziyang_ext/linkpet-mvp/frontend/frontend_env/include
+
+Name: absl_civil_time
+Description: Abseil civil_time library
+URL: https://abseil.io/
+Version: 20250512
+Requires:
+Libs: -L${libdir}  -labsl_civil_time 
+Cflags: -I${includedir} -DNOMINMAX

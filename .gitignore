@@ -9,3 +9,7 @@ venv/
 *.log
 *.db
 .DS_Store
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/

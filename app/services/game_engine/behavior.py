@@ -11,7 +11,7 @@ import os
 import datetime
 
 # Configuration
-MIN_DURATION_SECONDS = 60 * 180  # Minimum time to stay in a state
+MIN_DURATION_SECONDS = 60  # Minimum time to stay in a state
 PROBABILITY_CHECK_INTERVAL = 10 
 
 # Destinations
@@ -25,7 +25,7 @@ LANDMARKS = ["Volcano Eruption", "Statue"]
 # ---------------------------------------------------------
 
 # Base paths
-BASE_DIR = "/data/ext_workspace/taoziyang_ext/linkpet-mvp"
+BASE_DIR = "/data/ext_workspace/taoziyang_ext/LinkPet"
 SCENES_DIR = os.path.join(BASE_DIR, "frontend/public/images/scenes")
 PETS_DIR = os.path.join(BASE_DIR, "frontend/public/images/pets")
 
