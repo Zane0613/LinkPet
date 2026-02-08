@@ -323,6 +323,11 @@ def create_diary_entry(owner: Pet, partner, destination: str, db: Session):
         else:
              image_url = "/images/scenes/park.png"
     
+    # Check if the returned image_url is a local absolute path (from service fallback)
+    # and convert it to a relative URL if necessary
+    if image_url and not image_url.startswith("http") and "/frontend/public/" in image_url:
+        image_url = image_url.split("/frontend/public")[-1]
+    
     # 5. Save Diary
     new_diary = Diary(
         pet_id=owner.id,

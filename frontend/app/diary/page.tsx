@@ -18,6 +18,7 @@ export default function DiaryPage() {
   const [diaries, setDiaries] = useState<Diary[]>([]);
   const [petId, setPetId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     api.get("/pet/my/all").then(res => {
@@ -39,6 +40,14 @@ export default function DiaryPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImageError = (id: number) => {
+    setFailedImages(prev => {
+        const newSet = new Set(prev);
+        newSet.add(id);
+        return newSet;
+    });
   };
 
   if (loading) return (
@@ -79,15 +88,16 @@ export default function DiaryPage() {
                     {/* Image Section */}
                     <div className="w-full md:w-1/2 flex-shrink-0">
                         <div className="relative aspect-video w-full border-2 border-black rounded-xl overflow-hidden bg-gray-100">
-                            {diary.image_url ? (
+                            {diary.image_url && !failedImages.has(diary.id) ? (
                                 <img 
                                     src={diary.image_url} 
                                     alt={diary.title} 
                                     className="w-full h-full object-cover"
+                                    onError={() => handleImageError(diary.id)}
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400 font-bold border-2 border-dashed border-gray-400 m-2 rounded-lg w-[calc(100%-16px)] h-[calc(100%-16px)]">
-                                    暂无照片
+                                    {diary.image_url ? "图片加载失败" : "暂无照片"}
                                 </div>
                             )}
                         </div>
