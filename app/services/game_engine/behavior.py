@@ -6,13 +6,14 @@ from app.models.diary import Diary
 from app.models.memory import Memory
 from app.services.llm_service import llm_service, FALLBACK_NARRATIVE
 from app.services.image_gen_service import image_gen_service
+from app.services.agent.memory import save_memory, retrieve_memories
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 import os
 import datetime
 
 # Configuration
-MIN_DURATION_SECONDS = 300  # Minimum time to stay in a state (5 minutes)
+MIN_DURATION_SECONDS = 60 * 120  # Minimum time to stay in a state
 PROBABILITY_CHECK_INTERVAL = 60 # Check probability every minute 
 
 # Destinations
@@ -274,34 +275,18 @@ def create_diary_entry(owner: Pet, partner, destination: str, db: Session):
             if prev_meetings > 0:
                 first_time_meeting = False
 
+        # Semantic Search for Context
         query_text = f"Trip to {destination}. {encounter_text}. Personality: {my_personality_desc}"
-        query_embedding = llm_service.get_embedding(query_text)
         
-        if query_embedding:
-            # Fetch all trip logs for this pet
-            memories = db.query(Memory).filter(
-                Memory.pet_id == owner.id,
-                Memory.type == "trip_log"
-            ).all()
+        # Use the new semantic retrieval function
+        top_memories = retrieve_memories(db, owner.id, query_text, limit=5)
+        
+        if top_memories:
+            retrieved_context = "\n\nRelevant Past Memories (for style/context reference):\n"
+            for i, mem in enumerate(top_memories):
+                retrieved_context += f"{i+1}. {mem.content}\n"
+            print(f"Retrieved {len(top_memories)} similar memories for {owner.name}", flush=True)
             
-            # Calculate similarities
-            scored_memories = []
-            for mem in memories:
-                if mem.embedding:
-                    score = calculate_cosine_similarity(query_embedding, mem.embedding)
-                    scored_memories.append((score, mem.content))
-            
-            # Sort descending
-            scored_memories.sort(key=lambda x: x[0], reverse=True)
-            
-            # Take top 5
-            top_memories = scored_memories[:5]
-            
-            if top_memories:
-                retrieved_context = "\n\nRelevant Past Memories (for style/context reference):\n"
-                for i, (score, content) in enumerate(top_memories):
-                    retrieved_context += f"{i+1}. {content} (Similarity: {score:.2f})\n"
-                print(f"Retrieved {len(top_memories)} similar memories for {owner.name}", flush=True)
     except Exception as e:
         print(f"Memory retrieval/check failed: {e}", flush=True)
 
@@ -404,18 +389,8 @@ def create_diary_entry(owner: Pet, partner, destination: str, db: Session):
 
     # 6. Save Memory (Embedding)
     try:
-        # Generate embedding for the new content to allow future retrieval
-        diary_embedding = llm_service.get_embedding(content)
-        if diary_embedding:
-            new_memory = Memory(
-                pet_id=owner.id,
-                content=content,
-                embedding=diary_embedding,
-                type="trip_log",
-                timestamp=datetime.datetime.utcnow()
-            )
-            db.add(new_memory)
-            print(f"Memory saved for {owner.name}", flush=True)
+        save_memory(db, owner.id, content, type="trip_log")
+        print(f"Memory saved for {owner.name}", flush=True)
     except Exception as e:
         print(f"Failed to save memory: {e}", flush=True)
 
@@ -424,43 +399,54 @@ def generate_return_diary(pet: Pet, db: Session, destination_override: str = Non
     Generates a diary entry when the pet returns from a trip.
     Includes a generated image of the trip.
     """
-    destination = destination_override or pet.current_destination or "Unknown Place"
-    print(f"Generating diary for {pet.name} returning from {destination}...", flush=True)
-    
-    # Encounter Logic
-    potential_friends = db.query(Pet).filter(
-        Pet.id != pet.id,
-        Pet.current_destination == destination,
-        Pet.status == PetStatus.TRAVELING.value
-    ).all()
-    
-    friend = None
-    
-    if potential_friends:
-        random.shuffle(potential_friends)
-        for potential_friend in potential_friends:
-            prob = calculate_encounter_probability(pet, potential_friend)
-            roll = random.random()
-            print(f"Checking encounter with {potential_friend.name}: Prob={prob:.2f}, Roll={roll:.2f}", flush=True)
-            
-            if roll < prob:
-                friend = potential_friend
-                print(f"Encounter! {pet.name} met {friend.name} at {destination}", flush=True)
-                break 
-    
-    # Generate for Self
-    create_diary_entry(pet, friend, destination, db)
-    
-    # If friend, generate for friend and force return
-    if friend:
-        print(f"Generating reciprocal diary for friend {friend.name}...", flush=True)
-        create_diary_entry(friend, pet, destination, db)
+    try:
+        destination = destination_override or pet.current_destination or "Unknown Place"
+        print(f"Generating diary for {pet.name} returning from {destination}...", flush=True)
         
-        # Force friend to return
-        friend.status = PetStatus.SLEEPING.value
-        friend.current_destination = None
-        friend.last_status_update = int(time.time())
-        db.add(friend)
+        # Encounter Logic
+        potential_friends = db.query(Pet).filter(
+            Pet.id != pet.id,
+            Pet.current_destination == destination,
+            Pet.status == PetStatus.TRAVELING.value
+        ).all()
+        
+        friend = None
+        
+        if potential_friends:
+            random.shuffle(potential_friends)
+            for potential_friend in potential_friends:
+                prob = calculate_encounter_probability(pet, potential_friend)
+                roll = random.random()
+                print(f"Checking encounter with {potential_friend.name}: Prob={prob:.2f}, Roll={roll:.2f}", flush=True)
+                
+                if roll < prob:
+                    friend = potential_friend
+                    print(f"Encounter! {pet.name} met {friend.name} at {destination}", flush=True)
+                    break 
+        
+        # Generate for Self
+        create_diary_entry(pet, friend, destination, db)
+        
+        # If friend, generate for friend and force return
+        if friend:
+            print(f"Generating reciprocal diary for friend {friend.name}...", flush=True)
+            create_diary_entry(friend, pet, destination, db)
+            
+            # Force friend to return
+            friend.status = PetStatus.SLEEPING.value
+            friend.current_destination = None
+            friend.last_status_update = int(time.time())
+            db.add(friend)
+    except Exception as e:
+        print(f"Error in generate_return_diary: {e}", flush=True)
+        # We might want to re-raise or handle, but ensure finally block runs
+        raise e
+    finally:
+        # Always clear the flag, even if generation fails
+        print(f"Clearing generating_diary flag for {pet.name}", flush=True)
+        pet.is_generating_diary = False
+        db.add(pet)
+        db.commit()
 
 def update_pet_behavior(pet: Pet, db: Session) -> bool:
     """
@@ -484,7 +470,7 @@ def update_pet_behavior(pet: Pet, db: Session) -> bool:
     # Determine effective min duration
     # If it's the first trip, allow a short trip (e.g. 60s) instead of full duration.
     # This lets user see "Traveling" state briefly before return.
-    effective_min_duration = 60 if is_first_trip else MIN_DURATION_SECONDS
+    effective_min_duration = 5 if is_first_trip else MIN_DURATION_SECONDS
 
     if current_time - last_update < effective_min_duration:
         return False
@@ -537,6 +523,8 @@ def update_pet_behavior(pet: Pet, db: Session) -> bool:
         if is_returning:
             # Clear current destination
             pet.current_destination = None
+            # Set flag to indicate diary generation is pending
+            pet.is_generating_diary = True
 
         # Check if STARTING to Travel
         if new_status == PetStatus.TRAVELING.value:

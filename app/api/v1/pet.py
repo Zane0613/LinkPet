@@ -199,6 +199,14 @@ def get_pet(pet_id: int, db: Session = Depends(get_db)):
         update_pet_behavior(pet, db)
     
     db.refresh(pet)
+    
+    # Mask status if generating diary
+    if pet.is_generating_diary:
+        # Create a transient copy or modify response attribute if possible.
+        # Since PetOut is a Pydantic model, FastAPI converts the ORM object to it.
+        # We can temporarily modify the ORM object's status in memory (not commit).
+        pet.status = PetStatus.TRAVELING.value
+        
     return pet
 
 @router.get("/my/all", response_model=List[PetOut])
@@ -225,6 +233,11 @@ def get_my_pets(
             
     db.commit() # Commit any updates
     
+    # Mask status for pets generating diary
+    for pet in pets:
+        if pet.is_generating_diary:
+            pet.status = PetStatus.TRAVELING.value
+
     # Refresh logic might be needed but for list it's tricky.
     # We assume db.commit() syncs the objects attached to session.
     return pets

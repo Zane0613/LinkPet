@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Enum, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
@@ -35,7 +35,7 @@ class Pet(Base):
     frozen_since = Column(Integer, nullable=True) # Timestamp when buffer hit 0
     hatch_answers = Column(JSON, default=[]) # Store user answers during hatching
     last_read_diary_id = Column(Integer, default=0) # ID of the last diary entry read by user
-
+    is_generating_diary = Column(Boolean, default=False) # Flag to indicate if diary is being generated
     
     owner = relationship("User", backref="pets")
     memories = relationship("Memory", back_populates="pet")
