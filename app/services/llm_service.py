@@ -13,19 +13,21 @@ class LLMService:
         print(f"DEBUG: API Key: {settings.OPENAI_API_KEY[:10]}..." if settings.OPENAI_API_KEY else "DEBUG: No API Key")
         print(f"DEBUG: Base URL: {settings.OPENAI_API_BASE}")
         print(f"DEBUG: Model: {settings.OPENAI_MODEL}")
+        print(f"DEBUG: Chat Model: {settings.CHAT_MODEL}")
         
         self.client = OpenAI(
             api_key=settings.OPENAI_API_KEY,
             base_url=settings.OPENAI_API_BASE
         )
         self.model = settings.OPENAI_MODEL
+        self.chat_model = settings.CHAT_MODEL
 
     # @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=5, max=60), retry=retry_if_exception_type(Exception))
     def get_chat_response(self, system_prompt: str, user_message: str) -> str:
         try:
-            print(f"DEBUG: Sending Chat Request to {self.model}")
+            print(f"DEBUG: Sending Chat Request to {self.chat_model}")
             response = self.client.chat.completions.create(
-                model=self.model,
+                model=self.chat_model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
