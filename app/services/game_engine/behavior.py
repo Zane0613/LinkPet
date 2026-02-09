@@ -27,7 +27,10 @@ LANDMARKS = ["Volcano Eruption", "Statue"]
 # ---------------------------------------------------------
 
 # Base paths
-BASE_DIR = "/data/ext_workspace/taoziyang_ext/LinkPet"
+# Use dynamic path detection to support both local and ModelScope environments
+current_file_path = os.path.abspath(__file__)
+# Go up 4 levels: behavior.py -> game_engine -> services -> app -> LinkPet
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file_path))))
 SCENES_DIR = os.path.join(BASE_DIR, "frontend/public/images/scenes")
 PETS_DIR = os.path.join(BASE_DIR, "frontend/public/images/pets")
 
