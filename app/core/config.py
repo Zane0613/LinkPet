@@ -12,10 +12,15 @@ class Settings(BaseSettings):
     # LLM
     OPENAI_API_KEY: str = "ms-137564c8-e848-45b6-9f11-d9a10884e69a" # Loaded from env
     OPENAI_API_BASE: str = "https://api-inference.modelscope.cn/v1"
-    OPENAI_MODEL: str = "deepseek-ai/DeepSeek-R1-0528"
+    OPENAI_MODEL: str = "moonshotai/Kimi-K2.5"
     OPENAI_EMBEDDING_MODEL: str = "Qwen/Qwen3-Embedding-8B"
 
-    # Image Generation (Volcengine/Ark)
+    # Image Generation (ModelScope)
+    MODELSCOPE_API_KEY: str = "ms-137564c8-e848-45b6-9f11-d9a10884e69a"
+    MODELSCOPE_API_BASE: str = "https://api-inference.modelscope.cn/"
+    MODELSCOPE_IMAGE_MODEL: str = "Qwen/Qwen-Image-Edit-2511"
+
+    # Image Generation (Volcengine/Ark) - Deprecated but kept for ref
     ARK_API_KEY: str = "WkdNMllqWTRNekkxTURrMk5HTmxNbUV6TXpZME1XWmpOR1EzWVRsaU0yTQ=="
     ARK_BASE_URL: str = "https://ark.cn-beijing.volces.com/api/v3"
     ARK_MODEL_ID: str = "doubao-seedream-4-5-251128"

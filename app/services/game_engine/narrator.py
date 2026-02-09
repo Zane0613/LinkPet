@@ -27,4 +27,4 @@ def generate_diary_entry(pet: Pet, trip_data: Dict[str, Any]) -> str:
     Item Found: {item if item else "Nothing"}
     """
     
-    return llm_service.generate_narrative(system_prompt, context)
+    return llm_service.generate_narrative_safe(system_prompt, context)

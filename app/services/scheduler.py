@@ -32,8 +32,8 @@ def update_all_pets_behavior():
 
 def start_scheduler():
     if not scheduler.running:
-        # Run every 1 minute
-        scheduler.add_job(update_all_pets_behavior, 'interval', minutes=1)
+        # Run every 3 minutes to avoid overlapping jobs due to slow LLM/ImageGen APIs
+        scheduler.add_job(update_all_pets_behavior, 'interval', minutes=3)
         scheduler.start()
         logger.info("Background scheduler started.")
 

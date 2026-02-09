@@ -25,7 +25,7 @@ const QUESTIONS = [
   { q: "你会带它去哪里玩？", options: ["热闹的游乐园", "安静的图书馆", "神秘的森林"] },
 ];
 
-const TARGET_HATCH_SECONDS = 3 * 60; // 3 minutes for full personality test
+const TARGET_HATCH_SECONDS = 90; // 90 seconds total
 const MAX_QUESTIONS = 6;
 
 export default function HatchPage() {
@@ -248,12 +248,12 @@ export default function HatchPage() {
               animate={
                 isTransitioning 
                 ? {
-                    x: [-5, 5, -5, 5],
-                    rotate: [-2, 2, -2, 2],
+                    x: [-2, 2, -2, 2],
+                    rotate: [-1, 1, -1, 1],
                     filter: ["brightness(1)", "brightness(2)", "brightness(5)"],
                     transition: { 
-                      x: { repeat: Infinity, duration: 0.5, repeatType: "mirror" },
-                      rotate: { repeat: Infinity, duration: 0.5, repeatType: "mirror" },
+                      x: { repeat: Infinity, duration: 1.0, repeatType: "mirror" },
+                      rotate: { repeat: Infinity, duration: 1.0, repeatType: "mirror" },
                       filter: { duration: 6, ease: "easeIn" }
                     }
                   }
@@ -301,7 +301,7 @@ export default function HatchPage() {
                     onClick={() => setShowQuestion(true)}
                     className="w-full py-4 bg-[#FFB347] text-black border-2 border-black rounded-xl font-black text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px] transition-all"
                 >
-                    回答问题 (+2分钟热量)
+                    回答问题 (+15秒孵化时间)
                 </button>
               )
           ) : (
@@ -316,7 +316,7 @@ export default function HatchPage() {
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 2, delay: 4, ease: "easeIn" }}
+            transition={{ duration: 1, delay: 2, ease: "easeIn" }}
             className="fixed inset-0 bg-white z-50 pointer-events-none"
         />
       )}

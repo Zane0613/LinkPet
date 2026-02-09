@@ -24,7 +24,7 @@ def send_message(chat_in: ChatMessage, db: Session = Depends(get_db)):
     system_prompt = build_prompt(pet, chat_in.message, memories)
 
     # 4. Generate Response (Real LLM)
-    reply_text = llm_service.get_chat_response(system_prompt, chat_in.message)
+    reply_text = llm_service.get_chat_response_safe(system_prompt, chat_in.message)
 
     # 5. Save Interaction to Memory
     # Save user message

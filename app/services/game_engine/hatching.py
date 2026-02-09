@@ -5,8 +5,8 @@ from app.models.pet import Pet, PetStatus
 from sqlalchemy.orm import Session
 
 # Constants
-HATCH_TARGET_SECONDS = 3 * 60  # 12 minutes for full personality test
-HEAT_REWARD_SECONDS = 1 * 30    # 2 minutes per question
+HATCH_TARGET_SECONDS = 90  # 90 seconds total
+HEAT_REWARD_SECONDS = 15   # 15 seconds per question
 MAX_QUESTIONS = 6
 DEATH_THRESHOLD_SECONDS = 24 * 3600 # 24 hours frozen
 

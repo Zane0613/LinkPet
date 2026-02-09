@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 from typing import List
 import time
 
@@ -127,6 +128,7 @@ def set_pet_name(
             if destination not in visited:
                 visited.append(destination)
                 pet.visited_landmarks = visited
+                flag_modified(pet, "visited_landmarks")
 
         pet.last_status_update = int(time.time())
         
