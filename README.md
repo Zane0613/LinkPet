@@ -28,9 +28,9 @@ LinkPet 是一个基于大语言模型（LLM）驱动的 AI 电子宠物系统�
 
 - **🥚 性格孵化系统**：通过心理测试（MBTI 简化版）映射生成的初始性格，决定宠物的互动风格。
 - **🧠 自主行为引擎**：宠物不仅仅是等待指令的程序。它们会自主决定何时睡觉、进食或出门旅行。
-- **🌍 赛博旅行与明信片**：宠物会随机进行“旅行”，利用 **火山引擎 (Volcengine Ark)** 生成独特的旅行照片，并带回旅行日记。
+- **🌍 赛博旅行与明信片**：宠物会随机进行“旅行”，生成独特的旅行照片，并带回旅行日记。
 - **💬 深度情感交互**：基于 LLM 的对话系统，支持长短期记忆，宠物会记住你的喜好和共同经历。
-- **📱 响应式前端**：基于 Next.js 和 Framer Motion 构建的流畅动画和沉浸式 UI。
+- **📱 响应式前端**：基于 Next.js 构建的流畅动画和沉浸式 UI。
 
 ## 🛠️ 技术栈
 
@@ -43,8 +43,7 @@ LinkPet 是一个基于大语言模型（LLM）驱动的 AI 电子宠物系统�
 
 ### Frontend (前端)
 - **Framework**: [Next.js 14](https://nextjs.org/) (Static Export)
-- **UI Library**: React 18, TailwindCSS
-- **Animation**: Framer Motion (孵化与交互动画)
+- **UI Library**: React 18
 - **State Management**: React Hooks
 
 ## 📂 目录结构
