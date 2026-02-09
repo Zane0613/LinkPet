@@ -51,10 +51,14 @@ def run_trip_logic(pet_id: int):
             img_service = ImageGenerationService()
             
             # Construct absolute paths
-            # Note: We are running in /data/ext_workspace/taoziyang_ext, so we can use absolute path
-            base_path = "/data/ext_workspace/taoziyang_ext/linkpet-mvp/frontend/public/images"
+            # Use dynamic path detection relative to project root
+            current_file_path = os.path.abspath(__file__)
+            # Go up 4 levels: trip.py -> v1 -> api -> app -> LinkPet
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file_path))))
+            base_path = os.path.join(project_root, "frontend/public/images")
+            
             pet_image_path = os.path.join(base_path, "pets", f"{pet.template_id}.png")
-            scene_image_path = os.path.join(base_path, "scenes", f"{trip_data['scene']['id']}.png")
+            scene_image_path = os.path.join(base_path, "scenes", f"{trip_data['scene']['id'].lower().replace(' ', '_')}.png")
             
             # Fallback if specific scene image missing
             if not os.path.exists(scene_image_path):
