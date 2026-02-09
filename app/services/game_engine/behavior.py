@@ -471,7 +471,22 @@ def update_pet_behavior(pet: Pet, db: Session) -> bool:
     last_update = pet.last_status_update or 0
     
     # 1. Enforce minimum duration in current state
-    if current_time - last_update < MIN_DURATION_SECONDS:
+    
+    # Check if this is the FIRST trip ever (no diaries generated yet)
+    # If so, we want to allow immediate return to give user quick feedback.
+    is_first_trip = False
+    if pet.status == PetStatus.TRAVELING.value:
+        # Count diaries for this pet
+        diary_count = db.query(Diary).filter(Diary.pet_id == pet.id).count()
+        if diary_count == 0:
+            is_first_trip = True
+
+    # Determine effective min duration
+    # If it's the first trip, allow a short trip (e.g. 60s) instead of full duration.
+    # This lets user see "Traveling" state briefly before return.
+    effective_min_duration = 60 if is_first_trip else MIN_DURATION_SECONDS
+
+    if current_time - last_update < effective_min_duration:
         return False
         
     # 2. Determine Probabilities
