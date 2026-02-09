@@ -15,8 +15,10 @@ echo "========================================"
 echo "   LinkPet Frontend Auto-Deploy Tool    "
 echo "========================================"
 
-# Add local node environment to PATH
-export PATH="$FRONTEND_DIR/frontend_env/bin:$PATH"
+# Add local node environment to PATH if it exists
+if [ -d "$FRONTEND_DIR/frontend_env/bin" ]; then
+    export PATH="$FRONTEND_DIR/frontend_env/bin:$PATH"
+fi
 
 # 1. Check Frontend Directory
 if [ ! -d "$FRONTEND_DIR" ]; then

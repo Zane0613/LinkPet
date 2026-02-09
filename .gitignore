@@ -13,3 +13,4 @@ node_modules/
 frontend/node_modules/
 .next/
 frontend/.next/
+frontend/frontend_env/
