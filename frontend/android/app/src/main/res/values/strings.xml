@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LinkPet</string>
+    <string name="title_activity_main">LinkPet</string>
+    <string name="package_name">com.linkpet.app</string>
+    <string name="custom_url_scheme">com.linkpet.app</string>
+</resources>

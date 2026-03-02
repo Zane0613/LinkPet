@@ -38,6 +38,16 @@ frontend/out/
 # Build artifacts served by FastAPI (regenerated via deploy_frontend.sh)
 static/
 
+# Capacitor - synced web assets (regenerated via `npx cap sync`)
+frontend/ios/App/App/public/
+frontend/android/app/src/main/assets/public/
+
+# Capacitor - native build artifacts
+frontend/ios/App/Pods/
+frontend/android/.gradle/
+frontend/android/app/build/
+frontend/android/build/
+
 # IDE
 .vscode/
 .idea/

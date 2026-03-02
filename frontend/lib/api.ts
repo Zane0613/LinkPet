@@ -1,7 +1,15 @@
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
+
+function getBaseURL() {
+  if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7860/api/v1';
+  }
+  return process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+}
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || '/api/v1',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
