@@ -1,16 +1,46 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-env/
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
 venv/
-.env
-*.log
-*.db
-.DS_Store
-node_modules/
-frontend/node_modules/
-.next/
-frontend/.next/
+env/
 frontend/frontend_env/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / Frontend
+node_modules/
+frontend/.next/
+frontend/out/
+
+# Build artifacts served by FastAPI (regenerated via deploy_frontend.sh)
+static/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
