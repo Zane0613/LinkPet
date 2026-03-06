@@ -10,14 +10,14 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./linkpet.db"
     
     # LLM
-    OPENAI_API_KEY: str = "ms-137564c8-e848-45b6-9f11-d9a10884e69a" # Loaded from env
+    OPENAI_API_KEY: str = "ms-891d05c4-e8f6-4fcd-8d1a-021ac3e301f5" # Updated with valid key
     OPENAI_API_BASE: str = "https://api-inference.modelscope.cn/v1"
     OPENAI_MODEL: str = "moonshotai/Kimi-K2.5"
     CHAT_MODEL: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
     OPENAI_EMBEDDING_MODEL: str = "Qwen/Qwen3-Embedding-8B"
 
     # Image Generation (ModelScope)
-    MODELSCOPE_API_KEY: str = "ms-137564c8-e848-45b6-9f11-d9a10884e69a"
+    MODELSCOPE_API_KEY: str = "ms-891d05c4-e8f6-4fcd-8d1a-021ac3e301f5"
     MODELSCOPE_API_BASE: str = "https://api-inference.modelscope.cn/"
     MODELSCOPE_IMAGE_MODEL: str = "Qwen/Qwen-Image-Edit-2511"
 

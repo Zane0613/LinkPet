@@ -48,9 +48,7 @@ frontend/android/.gradle/
 frontend/android/app/build/
 frontend/android/build/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Temp / Scripts
+node_bin/
+scripts/
+tmp/

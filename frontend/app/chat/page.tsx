@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import api from "@/lib/api";
+import api, { getBaseURL } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 interface Message {
   role: "user" | "pet";
   content: string;
+  reasoning?: string;
 }
 
 export default function ChatPage() {
@@ -45,15 +46,123 @@ export default function ChatPage() {
     setLoading(true);
 
     try {
-      const res = await api.post("/chat/send", {
-        pet_id: petId,
-        message: userMsg
+      // Add placeholder message for streaming response
+      setMessages(prev => [...prev, { role: "pet", content: "", reasoning: "" }]);
+
+      const baseURL = getBaseURL();
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+
+      if (typeof window !== 'undefined') {
+        const userId = localStorage.getItem('linkpet_user_id');
+        if (userId) {
+          headers['X-User-ID'] = userId;
+        }
+      }
+
+      const response = await fetch(`${baseURL}/chat/send`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          pet_id: petId,
+          message: userMsg
+        })
       });
-      
-      setMessages(prev => [...prev, { role: "pet", content: res.data.reply }]);
+
+      if (!response.ok || !response.body) {
+        throw new Error("Network response was not ok");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let fullContent = "";
+      let fullReasoning = "";
+      let buffer = "";
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value, { stream: true });
+        
+        buffer += chunkValue;
+        const lines = buffer.split("\n");
+        // Keep the last line in the buffer as it might be incomplete
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+          
+          if (trimmedLine.startsWith("data:")) {
+            const dataStr = trimmedLine.replace(/^data:\s*/, "");
+            if (dataStr === "[DONE]") {
+              done = true;
+              break;
+            }
+            try {
+              const data = JSON.parse(dataStr);
+              
+              if (data.error) {
+                console.error("Received error from stream:", data.error);
+                throw new Error(data.error);
+              }
+              
+              let updated = false;
+              
+              if (data.reasoning) {
+                fullReasoning += data.reasoning;
+                updated = true;
+              }
+              if (data.content) {
+                fullContent += data.content;
+                updated = true;
+              }
+              
+              if (updated) {
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  if (newMessages.length === 0) return prev;
+                  
+                  const lastMsgIndex = newMessages.length - 1;
+                  const lastMsg = newMessages[lastMsgIndex];
+                  
+                  if (lastMsg.role === "pet") {
+                    newMessages[lastMsgIndex] = {
+                      ...lastMsg,
+                      content: fullContent,
+                      reasoning: fullReasoning
+                    };
+                    return newMessages;
+                  }
+                  return prev;
+                });
+              }
+            } catch (e) {
+              console.error("Error parsing JSON chunk", e, "Chunk:", dataStr);
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages(prev => [...prev, { role: "pet", content: "..." }]); // Error state
+      setMessages(prev => {
+          const newMessages = [...prev];
+          if (newMessages.length === 0) return prev;
+          
+          const lastMsgIndex = newMessages.length - 1;
+          const lastMsg = newMessages[lastMsgIndex];
+          
+          if (lastMsg.role === "pet" && lastMsg.content === "") {
+             newMessages[lastMsgIndex] = {
+                 ...lastMsg,
+                 content: "喵... (网络好像出问题了: " + (error instanceof Error ? error.message : String(error)) + ")"
+             };
+             return newMessages;
+          }
+          return prev;
+      });
     } finally {
       setLoading(false);
     }
@@ -73,17 +182,24 @@ export default function ChatPage() {
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[80%] p-3 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm md:text-base font-medium ${
+              className={`max-w-[80%] p-3 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm md:text-base font-medium min-h-[40px] ${
                 msg.role === "user"
                   ? "bg-[#FFB347] text-black rounded-tr-none"
                   : "bg-white text-black rounded-tl-none"
               }`}
             >
+{/* Thinking process hidden as per user request */}
+              {/* {msg.reasoning && (
+                <div className="mb-2 p-2 bg-gray-100 rounded border border-gray-300 text-xs text-gray-600 italic">
+                  <div className="font-bold not-italic mb-1">思考过程:</div>
+                  {msg.reasoning}
+                </div>
+              )} */}
               {msg.content}
             </div>
           </div>
         ))}
-        {loading && (
+        {loading && messages.length > 0 && messages[messages.length - 1].role !== 'pet' && (
           <div className="flex justify-start">
              <div className="bg-white border-2 border-black p-3 rounded-2xl rounded-tl-none text-gray-400 text-sm animate-pulse shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                思考中...

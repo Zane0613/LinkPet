@@ -80,12 +80,17 @@ def get_personality_modifiers(pet: Pet):
     # High extroversion -> Higher chance to eat (social?) or just active
     eat_weight = 0.2 + (extroversion * 0.2) # 0.2 to 0.4
     
+    # Low extroversion / High rebellion -> Higher chance to read
+    # Reading is solitary
+    read_weight = 0.2 + ((1.0 - extroversion) * 0.2)
+    
     # Sleep is the default/fallback
     sleep_weight = 0.5
     
     return {
         "travel": travel_weight,
         "eat": eat_weight,
+        "read": read_weight,
         "sleep": sleep_weight
     }
 
@@ -490,24 +495,39 @@ def update_pet_behavior(pet: Pet, db: Session) -> bool:
     
     if current_status == PetStatus.SLEEPING.value:
         # Normalize weights for transition
-        total_weight = mods["sleep"] + mods["eat"] + mods["travel"]
+        total_weight = mods["sleep"] + mods["eat"] + mods["travel"] + mods["read"]
         p_eat = mods["eat"] / total_weight
+        p_read = mods["read"] / total_weight
         p_travel = mods["travel"] / total_weight
         
         if roll < p_eat:
             new_status = PetStatus.EATING.value
-        elif roll < p_eat + p_travel:
+        elif roll < p_eat + p_read:
+            new_status = PetStatus.READING.value
+        elif roll < p_eat + p_read + p_travel:
             new_status = PetStatus.TRAVELING.value
         else:
             new_status = PetStatus.SLEEPING.value
             
     elif current_status == PetStatus.EATING.value:
-        if roll < 0.7: 
+        if roll < 0.6: 
             new_status = PetStatus.SLEEPING.value
+        elif roll < 0.8:
+            new_status = PetStatus.READING.value
         elif roll < 0.9: 
             new_status = PetStatus.TRAVELING.value
         else:
             new_status = PetStatus.EATING.value
+            
+    elif current_status == PetStatus.READING.value:
+        if roll < 0.6:
+            new_status = PetStatus.SLEEPING.value
+        elif roll < 0.8:
+            new_status = PetStatus.EATING.value
+        elif roll < 0.9:
+            new_status = PetStatus.TRAVELING.value
+        else:
+            new_status = PetStatus.READING.value
             
     elif current_status == PetStatus.TRAVELING.value:
         if roll < 0.6: 

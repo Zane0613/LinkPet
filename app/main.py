@@ -7,10 +7,11 @@ from app.api.v1 import api_router
 from app.api.v1 import trip
 from app.core.database import engine, Base, SessionLocal
 # Import models so they are registered with Base
-from app.models import user, pet, memory, item 
+from app.models import user, pet, memory, item, social
 from app.models.user import User
 from app.models.memory import Memory
 from app.models.diary import Diary
+from app.models.social import PetEncounter, UserChat, UserMessage
 from app.services.scheduler import start_scheduler, stop_scheduler
 
 # Create tables on startup

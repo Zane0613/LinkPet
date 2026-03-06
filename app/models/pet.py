@@ -6,6 +6,7 @@ import enum
 class PetStatus(str, enum.Enum):
     SLEEPING = "sleeping"
     EATING = "eating"
+    READING = "reading"
     TRAVELING = "traveling"
     # Egg Statuses
     EGG_CLAIMED = "egg_claimed"

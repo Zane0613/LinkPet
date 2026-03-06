@@ -4,6 +4,8 @@ from typing import List
 from app.core.database import get_db
 from app.models.pet import Pet, PetStatus
 from app.models.diary import Diary
+from app.models.social import PetEncounter, UserChat
+from sqlalchemy import or_, func
 from app.schemas.trip_schema import TripCreate, TripResponse, DiaryEntry
 from app.services.game_engine.probability import roll_trip_outcome
 from app.services.game_engine.narrator import generate_diary_entry
@@ -38,6 +40,74 @@ def run_trip_logic(pet_id: int):
         # 1. Roll Outcome
         trip_data = roll_trip_outcome(pet.dynamic_traits)
         print(f"DEBUG: Trip outcome rolled: {trip_data}", flush=True)
+
+        # 1.5 Handle Social Encounters
+        # Only check if event tags include 'social'
+        if "social" in trip_data['event'].get('tags', []):
+            print("DEBUG: Social event triggered. Looking for a friend...", flush=True)
+            try:
+                # Find a random pet that is NOT the current pet
+                # SQLite uses random(), Postgres uses random(), MySQL uses rand()
+                # Assuming SQLite/Postgres here
+                other_pet = db.query(Pet).filter(Pet.id != pet.id).order_by(func.random()).first()
+                
+                if other_pet:
+                    print(f"DEBUG: Found friend {other_pet.name} (ID: {other_pet.id})", flush=True)
+                    
+                    # Check/Create Encounter
+                    encounter = db.query(PetEncounter).filter(
+                        or_(
+                            (PetEncounter.pet_id_1 == pet.id) & (PetEncounter.pet_id_2 == other_pet.id),
+                            (PetEncounter.pet_id_1 == other_pet.id) & (PetEncounter.pet_id_2 == pet.id)
+                        )
+                    ).first()
+
+                    if encounter:
+                        encounter.encounter_count += 1
+                        encounter.last_encounter_date = func.now()
+                        print(f"DEBUG: Updated encounter count to {encounter.encounter_count}", flush=True)
+                    else:
+                        encounter = PetEncounter(pet_id_1=pet.id, pet_id_2=other_pet.id, encounter_count=1)
+                        db.add(encounter)
+                        print(f"DEBUG: Created new encounter", flush=True)
+                    
+                    # Commit to save encounter update
+                    db.commit()
+                    db.refresh(encounter)
+
+                    # Update trip text to include the friend's name
+                    trip_data['event']['text'] += f" Met {other_pet.name} the {other_pet.template_id}!"
+
+                    # Check if chat should be enabled (count > 2)
+                    if encounter.encounter_count > 2:
+                        user1_id = pet.owner_id
+                        user2_id = other_pet.owner_id
+                        
+                        if user1_id and user2_id and user1_id != user2_id:
+                            chat = db.query(UserChat).filter(
+                                or_(
+                                    (UserChat.user_id_1 == user1_id) & (UserChat.user_id_2 == user2_id),
+                                    (UserChat.user_id_1 == user2_id) & (UserChat.user_id_2 == user1_id)
+                                )
+                            ).first()
+                            
+                            if not chat:
+                                chat = UserChat(user_id_1=user1_id, user_id_2=user2_id, is_active=True)
+                                db.add(chat)
+                                db.commit()
+                                print(f"DEBUG: New chat unlocked between User {user1_id} and User {user2_id}", flush=True)
+                            elif not chat.is_active:
+                                chat.is_active = True
+                                db.add(chat)
+                                db.commit()
+                                print(f"DEBUG: Chat reactivated between User {user1_id} and User {user2_id}", flush=True)
+                else:
+                    print("DEBUG: No other pets found to meet.", flush=True)
+            except Exception as e:
+                print(f"ERROR in social encounter logic: {e}", flush=True)
+                import traceback
+                traceback.print_exc()
+
         
         # 2. Generate Diary
         print(f"DEBUG: Generating diary entry...", flush=True)

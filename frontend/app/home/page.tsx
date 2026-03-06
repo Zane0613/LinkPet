@@ -198,11 +198,13 @@ export default function HomePage() {
   const isTraveling = currentStatus === 'traveling';
   
   // Image Source Logic
-  // If traveling: Use home-bg.png
-  // If at home: Use specific pet status image
-  const displayImage = isTraveling
-    ? '/images/backgrounds/home-bg.png'
-    : `/images/pets/${displayTemplateId}_${currentStatus}.png`;
+  // 1. Background is always home-bg.gif (Empty room)
+  // 2. Pet is an overlay GIF (red_panda for now)
+  const backgroundImage = '/images/backgrounds/home-bg.gif';
+  
+  // Force use red_panda for now
+  const displayTemplateIdOverride = 'red_panda';
+  const petImage = `/images/pets/${displayTemplateIdOverride}_${currentStatus}.gif`;
 
   return (
     <div className="min-h-screen relative bg-[#f0f9ff] overflow-hidden">
@@ -213,7 +215,7 @@ export default function HomePage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 1.5 }}
       >
-        {/* Header with Hand-Drawn Style */}
+        {/* ... Header ... */}
         <header className="p-6 flex justify-between items-center z-20">
           {/* Custom Image Title with Font */}
           <div className="relative transform -rotate-2 hover:scale-105 transition-transform duration-300">
@@ -265,52 +267,46 @@ export default function HomePage() {
                 聊天
               </span>
             </Link>
+
+            <Link href="/social" className="group relative hover:scale-105 transition-transform duration-300">
+              <div className="px-5 py-2 bg-white border-2 border-black rounded-xl font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center h-12 md:h-14">
+                👥 好友
+              </div>
+            </Link>
           </div>
         </header>
 
         {/* Central Display Area */}
         <div className="absolute inset-0 flex items-center justify-center z-0">
+            {/* 1. Background Layer */}
+            <img 
+                src={backgroundImage}
+                alt="Home Background"
+                className="absolute inset-0 w-full h-full object-cover"
+            />
+
+            {/* 2. Content Layer */}
             {isTraveling ? (
-                // Traveling: Full Screen Background + Status Card
-                <>
-                    <img 
-                        src={displayImage}
-                        alt="Home Background"
-                        className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    <div className="relative z-10 bg-white/90 p-6 rounded-2xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center transform rotate-2">
-                        <p className="text-2xl font-black mb-2">✈️ 旅行中</p>
-                        <p className="text-gray-600 font-bold">我会给你带礼物回来的！</p>
-                    </div>
-                </>
+                // Traveling: Status Card only
+                <div className="relative z-10 bg-white/90 p-6 rounded-2xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center transform rotate-2">
+                    <p className="text-2xl font-black mb-2">✈️ 旅行中</p>
+                    <p className="text-gray-600 font-bold">我会给你带礼物回来的！</p>
+                </div>
             ) : (
-                // At Home: Full Screen Scenario Image
+                // At Home: Pet Sprite Overlay
                 <motion.img 
-                    key={displayImage}
-                    src={displayImage}
+                    key={petImage}
+                    src={petImage}
                     alt={pet.name}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
-                    className="w-full h-full object-cover cursor-pointer"
+                    // Adjust sizing to be a sprite on the floor
+                    className="absolute bottom-20 left-1/2 transform -translate-x-1/2 h-[35vh] w-auto object-contain cursor-pointer hover:scale-105 transition-transform"
                     onClick={() => router.push('/chat')}
                     onError={(e) => {
                         e.currentTarget.style.display = 'none';
-                        console.error(`Failed to load image: ${displayImage}`);
-                        // Fallback UI
-                        const parent = e.currentTarget.parentElement;
-                        if (parent) {
-                            const fallback = document.createElement('div');
-                            fallback.className = 'absolute inset-0 flex items-center justify-center text-red-500 font-bold bg-white/50 rounded-lg p-4';
-                            fallback.innerHTML = `
-                                <div class="text-center">
-                                    <p class="text-xl">😢</p>
-                                    <p>Image Missing</p>
-                                    <p class="text-xs mt-1 text-gray-600 break-all">${displayImage}</p>
-                                </div>
-                            `;
-                            parent.appendChild(fallback);
-                        }
+                        console.error(`Failed to load pet image: ${petImage}`);
                     }}
                 />
             )}

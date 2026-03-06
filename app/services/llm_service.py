@@ -52,6 +52,44 @@ class LLMService:
             # We need to wrap this in a way that returns fallback on final failure.
             raise e
 
+    def get_chat_response_stream(self, system_prompt: str, user_message: str):
+        """
+        Stream chat response, yielding chunks with reasoning and content.
+        """
+        try:
+            print(f"DEBUG: Sending Chat Stream Request to {self.chat_model}")
+            response = self.client.chat.completions.create(
+                model=self.chat_model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                temperature=0.7,
+                max_tokens=1024,
+                extra_body={"enable_thinking": True},
+                stream=True
+            )
+            
+            for chunk in response:
+                if chunk.choices:
+                    delta = chunk.choices[0].delta
+                    data = {}
+                    
+                    # Handle reasoning content (for DeepSeek R1 etc)
+                    if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                        data['reasoning'] = delta.reasoning_content
+                    
+                    if delta.content:
+                        data['content'] = delta.content
+                        
+                    if data:
+                        yield data
+                        
+        except Exception as e:
+            logger.error(f"LLM Stream Error: {e}")
+            print(f"DEBUG: LLM Stream Error: {e}")
+            yield {"error": str(e)}
+
     def get_chat_response_safe(self, system_prompt: str, user_message: str) -> str:
         """Wrapper for get_chat_response to handle final failure."""
         try:
