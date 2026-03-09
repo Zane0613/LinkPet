@@ -9,6 +9,8 @@ const config: Config = {
     extend: {
       fontFamily: {
         zcool: ["var(--font-zcool)", "sans-serif"],
+        xiaowei: ["var(--font-xiaowei)", "sans-serif"],
+        huangyou: ["var(--font-huangyou)", "sans-serif"],
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

@@ -28,7 +28,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF8E7] flex items-center justify-center p-4">
+    <div 
+      className="min-h-screen bg-black flex items-center justify-center p-4 bg-contain bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/images/backgrounds/login.png')" }}
+    >
       <div className="bg-white p-8 rounded-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] w-full max-w-md border-4 border-black transform rotate-1">
         <h1 className="text-4xl font-black mb-8 text-center text-black transform -rotate-2">
           欢迎回来

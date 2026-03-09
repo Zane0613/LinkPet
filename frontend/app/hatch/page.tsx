@@ -41,6 +41,26 @@ export default function HatchPage() {
   const [hasAnsweredThisSession, setHasAnsweredThisSession] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false); // Add transition state
   const [showUI, setShowUI] = useState(false); // Controls UI fade in after background
+  const [contentWidth, setContentWidth] = useState(320); // Default to xs (320px)
+
+  useEffect(() => {
+    const updateDimensions = () => {
+      const IMG_WIDTH = 800;
+      const IMG_HEIGHT = 1422;
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      
+      const scale = Math.min(windowWidth / IMG_WIDTH, windowHeight / IMG_HEIGHT);
+      const renderedWidth = IMG_WIDTH * scale;
+      
+      // Use rendered width minus some padding (e.g. 40px), but at least 280px
+      setContentWidth(Math.max(280, renderedWidth - 40));
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
 
   useEffect(() => {
     // Start UI fade in after background animation
@@ -187,17 +207,26 @@ export default function HatchPage() {
   const questionsAnswered = pet?.hatch_answers.length || 0;
   const currentQuestion = QUESTIONS[questionsAnswered];
 
+  const getBackgroundImage = () => {
+    if (isFrozen) return '/images/backgrounds/hatch-cold.gif';
+    const progress = localHatchProgress / TARGET_HATCH_SECONDS;
+    if (progress >= 2/3) return '/images/backgrounds/hatch-phase3.gif';
+    if (progress >= 1/3) return '/images/backgrounds/hatch-phase2.gif';
+    return '/images/backgrounds/hatch-phase1.gif';
+  };
+
   return (
     <motion.main 
-      className="relative min-h-screen flex flex-col justify-between p-4 bg-cover bg-center bg-no-repeat overflow-hidden"
-      style={{ backgroundImage: 'url(/images/backgrounds/hatch-bg.png)' }}
+      className="relative min-h-screen flex flex-col justify-between p-4 bg-contain bg-center bg-no-repeat overflow-hidden bg-black font-xiaowei"
+      style={{ backgroundImage: `url(${getBackgroundImage()})` }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1 }}
     >
       {/* Top: Progress & Status */}
       <motion.div 
-        className="w-full max-w-md mx-auto pt-0 z-10 space-y-2"
+        className="mx-auto pt-0 z-10 space-y-2"
+        style={{ width: contentWidth }}
         initial={{ opacity: 0, y: -20 }}
         animate={{ 
           opacity: (showUI && !isTransitioning) ? 1 : 0,
@@ -214,7 +243,7 @@ export default function HatchPage() {
           <div className="bg-white/90 p-4 rounded-2xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
              <div className="flex justify-between items-center mb-2">
                 <span className="font-bold text-sm">孵化进度</span>
-                <span className="font-mono font-black text-orange-500">
+                <span className="font-black text-orange-500">
                   {Math.floor((localHatchProgress / TARGET_HATCH_SECONDS) * 100)}%
                 </span>
              </div>
@@ -231,58 +260,21 @@ export default function HatchPage() {
                  <p className="font-bold text-sm">剩余热量</p>
                  <p className="text-xs text-gray-500">保持加热才能孵化哦</p>
              </div>
-             <span className={`font-mono text-2xl font-black ${localHeatBuffer > 0 ? "text-red-500 animate-pulse" : "text-gray-400"}`}>
+             <span className={`text-2xl font-black ${localHeatBuffer > 0 ? "text-red-500 animate-pulse" : "text-gray-400"}`}>
                {formatTime(localHeatBuffer)}
              </span>
           </div>
       </motion.div>
 
-      {/* Center: Interactive Egg */}
+      {/* Center: Interactive Egg REMOVED */}
       <div className="flex-grow flex items-end justify-center z-0 pb-28">
-          <motion.div
-              whileTap={{ 
-                  rotate: [0, -2, 2, -2, 2, 0],
-                  scale: 0.98,
-                  transition: { duration: 0.3 }
-              }}
-              animate={
-                isTransitioning 
-                ? {
-                    x: [-2, 2, -2, 2],
-                    rotate: [-1, 1, -1, 1],
-                    filter: ["brightness(1)", "brightness(2)", "brightness(5)"],
-                    transition: { 
-                      x: { repeat: Infinity, duration: 1.0, repeatType: "mirror" },
-                      rotate: { repeat: Infinity, duration: 1.0, repeatType: "mirror" },
-                      filter: { duration: 6, ease: "easeIn" }
-                    }
-                  }
-                : isHeating ? { 
-                  // y: [0, -3, 0], // Removed breathing movement
-                  filter: [
-                    "brightness(1) sepia(0) saturate(1)",
-                    "brightness(1.1) sepia(0.3) saturate(1.2)",
-                    "brightness(1) sepia(0) saturate(1)"
-                  ],
-                  transition: { 
-                      // y: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-                      filter: { repeat: Infinity, duration: 1.5, ease: "easeInOut", repeatType: "reverse" }
-                  }
-              } : {}}
-              className="cursor-pointer relative"
-          >
-              <img 
-                  src={isFrozen ? "/images/ui/egg-cold.png" : isHeating ? "/images/ui/egg-warm.png" : "/images/ui/egg.png"} 
-                  alt="Pet Egg" 
-                  className="w-48 h-auto md:w-60 drop-shadow-2xl"
-                  draggable={false}
-              />
-          </motion.div>
+          {/* Egg removed as requested */}
       </div>
 
       {/* Bottom: Controls */}
       <motion.div 
-        className="w-full max-w-md mx-auto pb-8 z-10"
+        className="mx-auto pb-8 z-10"
+        style={{ width: contentWidth }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ 
           opacity: (showUI && !isTransitioning) ? 1 : 0,

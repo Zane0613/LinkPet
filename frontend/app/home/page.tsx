@@ -255,59 +255,46 @@ export default function HomePage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 1.5 }}
         >
-          <header className="p-4 flex justify-between items-center">
-            <div className="relative transform -rotate-2 hover:scale-105 transition-transform duration-300">
-              <img
-                src="/images/ui/title_bg.png"
-                alt="Title Background"
-                className="h-10 md:h-14 w-auto object-contain drop-shadow-md"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.parentElement?.classList.add('bg-white', 'border-4', 'border-black', 'rounded-2xl', 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]');
-                }}
-              />
-              <h1 className="absolute inset-0 flex items-center justify-center text-base md:text-xl font-zcool text-black pb-1">
-                {pet.name}的家
-              </h1>
-            </div>
+          <header className="p-4 flex justify-end items-center">
 
-            <div className="flex gap-2">
+            <div className="flex gap-4">
               <Link href="/diary" className="group relative hover:scale-105 transition-transform duration-300">
-                <img
-                  src="/images/ui/diary_btn.png"
-                  alt="旅行日记"
-                  className="h-10 md:h-14 w-auto object-contain drop-shadow-md"
+                <img 
+                  src="/images/ui/diary_btn.png" 
+                  alt="旅行日记" 
+                  className="h-16 md:h-20 w-auto object-contain drop-shadow-md"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement?.classList.add('px-3', 'py-1.5', 'bg-white', 'border-2', 'border-black', 'rounded-xl', 'font-bold', 'text-black', 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]');
-                    e.currentTarget.parentElement!.innerText = '📖 日记';
+                    e.currentTarget.parentElement?.classList.add('px-5', 'py-2', 'bg-white', 'border-2', 'border-black', 'rounded-xl', 'font-bold', 'text-black', 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]');
+                    e.currentTarget.parentElement!.innerText = '📖 旅行日记';
                   }}
                 />
-                <span className="absolute inset-0 flex items-center justify-center font-zcool text-black text-base md:text-xl pointer-events-none pb-1">
-                  日记
-                </span>
               </Link>
-
+              
               <button onClick={() => setShowChat(true)} className="group relative hover:scale-105 transition-transform duration-300">
-                <img
-                  src="/images/ui/chat_btn.png"
-                  alt="聊天"
-                  className="h-10 md:h-14 w-auto object-contain drop-shadow-md"
+                <img 
+                  src="/images/ui/chat_btn.png" 
+                  alt="聊天" 
+                  className="h-16 md:h-20 w-auto object-contain drop-shadow-md"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement?.classList.add('px-3', 'py-1.5', 'bg-white', 'border-2', 'border-black', 'rounded-xl', 'font-bold', 'text-black', 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]');
+                    e.currentTarget.parentElement?.classList.add('px-5', 'py-2', 'bg-white', 'border-2', 'border-black', 'rounded-xl', 'font-bold', 'text-black', 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]');
                     e.currentTarget.parentElement!.innerText = '💬 聊天';
                   }}
                 />
-                <span className="absolute inset-0 flex items-center justify-center font-zcool text-black text-base md:text-xl pointer-events-none pb-1">
-                  聊天
-                </span>
               </button>
 
               <Link href="/social" className="group relative hover:scale-105 transition-transform duration-300">
-                <div className="px-3 py-1.5 bg-white border-2 border-black rounded-xl font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center h-10 md:h-14 text-sm md:text-base">
-                  👥 好友
-                </div>
+                <img 
+                  src="/images/ui/friend_btn.png" 
+                  alt="好友" 
+                  className="h-16 md:h-20 w-auto object-contain drop-shadow-md"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement?.classList.add('px-5', 'py-2', 'bg-white', 'border-2', 'border-black', 'rounded-xl', 'font-bold', 'text-black', 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]');
+                    e.currentTarget.parentElement!.innerText = '👥 好友';
+                  }}
+                />
               </Link>
             </div>
           </header>
