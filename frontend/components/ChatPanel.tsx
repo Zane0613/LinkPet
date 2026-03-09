@@ -13,9 +13,10 @@ interface ChatPanelProps {
   petId: number | null;
   petName: string;
   onClose: () => void;
+  hideHeader?: boolean;
 }
 
-export default function ChatPanel({ petId, petName, onClose }: ChatPanelProps) {
+export default function ChatPanel({ petId, petName, onClose, hideHeader }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -125,16 +126,17 @@ export default function ChatPanel({ petId, petName, onClose }: ChatPanelProps) {
 
   return (
     <div className="h-full flex flex-col bg-[#FFF8E7]">
-      {/* Header */}
-      <header className="bg-white p-4 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.1)] border-b-2 border-black flex items-center gap-3 shrink-0">
-        <button
-          onClick={onClose}
-          className="text-2xl font-black text-black hover:scale-110 transition-transform"
-        >
-          ✕
-        </button>
-        <h1 className="font-black text-lg text-black">与{petName}聊天</h1>
-      </header>
+      {!hideHeader && (
+        <header className="bg-white p-4 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.1)] border-b-2 border-black flex items-center gap-3 shrink-0">
+          <button
+            onClick={onClose}
+            className="text-2xl font-black text-black hover:scale-110 transition-transform"
+          >
+            ✕
+          </button>
+          <h1 className="font-black text-lg text-black">与{petName}聊天</h1>
+        </header>
+      )}
 
       {/* Messages */}
       <div className="flex-1 p-4 space-y-4 overflow-y-auto">
@@ -162,7 +164,7 @@ export default function ChatPanel({ petId, petName, onClose }: ChatPanelProps) {
       </div>
 
       {/* Input */}
-      <div className="p-3 bg-white border-t-2 border-black flex gap-2 shrink-0">
+      <div className="p-3 bg-white border-t-2 border-black flex gap-2 shrink-0 rounded-b-2xl">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}

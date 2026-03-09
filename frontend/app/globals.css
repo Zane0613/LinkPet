@@ -25,3 +25,8 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+/* Prevent vaul drawer from scaling/transforming the background */
+[vaul-drawer-wrapper] {
+  transform: none !important;
+}

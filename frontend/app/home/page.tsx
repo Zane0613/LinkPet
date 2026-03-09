@@ -8,6 +8,7 @@ import HandDrawnModal from "@/components/HandDrawnModal";
 import DiaryViewer from "@/components/DiaryViewer";
 import ChatPanel from "@/components/ChatPanel";
 import PetSprite from "@/components/PetSprite";
+import { Drawer } from "vaul";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface Pet {
@@ -35,23 +36,34 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const prevStatusRef = useRef<string | undefined>(undefined);
   const [bgVersion, setBgVersion] = useState(Date.now());
-  
+
   // New Diary State
   const [newDiaries, setNewDiaries] = useState<Diary[]>([]);
   const [showDiaryPrompt, setShowDiaryPrompt] = useState(false);
   const [showDiaryViewer, setShowDiaryViewer] = useState(false);
-  
+
   // Chat Panel State
   const [showChat, setShowChat] = useState(false);
-  
+  const [showPetGif, setShowPetGif] = useState(false);
+
+  useEffect(() => {
+    if (showChat) {
+      const timer = setTimeout(() => setShowPetGif(true), 1200);
+      return () => clearTimeout(timer);
+    } else {
+      setShowPetGif(false);
+    }
+  }, [showChat]);
+
   const petRef = useRef<Pet | null>(null);
   const isViewingDiaryRef = useRef(false);
-  
+  const gameContainerRef = useRef<HTMLDivElement>(null);
+
   // Update ref whenever pet state changes
   useEffect(() => {
     petRef.current = pet;
   }, [pet]);
-  
+
   // Update viewing ref
   useEffect(() => {
     isViewingDiaryRef.current = showDiaryViewer || showDiaryPrompt;
@@ -66,14 +78,14 @@ export default function HomePage() {
 
   const checkNewDiaries = async (currentPet: Pet) => {
     if (isViewingDiaryRef.current) return; // Don't check if already viewing
-    
+
     try {
       const res = await api.get(`/trip/diaries?pet_id=${currentPet.id}`);
       const allDiaries: Diary[] = res.data;
       const lastReadId = currentPet.last_read_diary_id || 0;
-      
+
       const unread = allDiaries.filter(d => d.id > lastReadId);
-      
+
       if (unread.length > 0) {
         setNewDiaries(unread);
         setShowDiaryPrompt(true);
@@ -91,50 +103,50 @@ export default function HomePage() {
         const pets = res.data;
         const currentPet = pets[pets.length - 1];
         const newStatus = currentPet.status;
-        
+
         const existingPet = petRef.current;
 
         // Initial Load
         if (!existingPet) {
-             setPet(currentPet);
-             prevStatusRef.current = newStatus;
-             setLoading(false);
-             // Check for new diaries on initial load
-             checkNewDiaries(currentPet);
-             return;
+          setPet(currentPet);
+          prevStatusRef.current = newStatus;
+          setLoading(false);
+          // Check for new diaries on initial load
+          checkNewDiaries(currentPet);
+          return;
         }
 
         // Status Change
         if (prevStatusRef.current && prevStatusRef.current !== newStatus) {
-            const oldStatus = prevStatusRef.current;
-            console.log(`[Home] Status changed: ${oldStatus} → ${newStatus}`);
-            // Just update pet and bg
-            setPet(currentPet);
-            prevStatusRef.current = newStatus;
-            setBgVersion(Date.now());
-            
-            // If returning from trip, check diaries immediately
-            if (oldStatus === 'traveling') {
-                checkNewDiaries(currentPet);
-            }
+          const oldStatus = prevStatusRef.current;
+          console.log(`[Home] Status changed: ${oldStatus} → ${newStatus}`);
+          // Just update pet and bg
+          setPet(currentPet);
+          prevStatusRef.current = newStatus;
+          setBgVersion(Date.now());
+
+          // If returning from trip, check diaries immediately
+          if (oldStatus === 'traveling') {
+            checkNewDiaries(currentPet);
+          }
         } else {
-            // No status change, check important fields
-            if (
-                existingPet.name !== currentPet.name || 
-                existingPet.template_id !== currentPet.template_id ||
-                existingPet.last_read_diary_id !== currentPet.last_read_diary_id
-            ) {
-                setPet(currentPet);
+          // No status change, check important fields
+          if (
+            existingPet.name !== currentPet.name ||
+            existingPet.template_id !== currentPet.template_id ||
+            existingPet.last_read_diary_id !== currentPet.last_read_diary_id
+          ) {
+            setPet(currentPet);
+          }
+
+          // Periodically check diaries if not traveling
+          if (newStatus !== 'traveling') {
+            // We can optimize this to not run every 5s, but for MVP it's fine.
+            // To avoid spamming, we only check if we don't have unread diaries pending
+            if (newDiaries.length === 0) {
+              checkNewDiaries(currentPet);
             }
-            
-            // Periodically check diaries if not traveling
-            if (newStatus !== 'traveling') {
-                 // We can optimize this to not run every 5s, but for MVP it's fine.
-                 // To avoid spamming, we only check if we don't have unread diaries pending
-                 if (newDiaries.length === 0) {
-                     checkNewDiaries(currentPet);
-                 }
-            }
+          }
         }
       }
     } catch (error) {
@@ -145,15 +157,15 @@ export default function HomePage() {
   };
 
   // Redirect if pet is still an egg
-   useEffect(() => {
-     if (pet) {
-       if (pet.status === 'egg_frozen' || pet.status === 'egg_heating' || pet.status === 'egg' || pet.status === 'egg_dead') {
-         router.push('/hatch');
-       } else if (pet.status === 'egg_hatched') {
-         router.push('/naming');
-       }
-     }
-   }, [pet, router]);
+  useEffect(() => {
+    if (pet) {
+      if (pet.status === 'egg_frozen' || pet.status === 'egg_heating' || pet.status === 'egg' || pet.status === 'egg_dead') {
+        router.push('/hatch');
+      } else if (pet.status === 'egg_hatched') {
+        router.push('/naming');
+      }
+    }
+  }, [pet, router]);
 
   const handleOpenDiary = () => {
     setShowDiaryPrompt(false);
@@ -191,12 +203,12 @@ export default function HomePage() {
   }
 
   // Redirect if egg
-   if (pet.status === 'egg_frozen' || pet.status === 'egg_heating' || pet.status === 'egg' || pet.status === 'egg_dead') {
-      return <div className="min-h-screen flex items-center justify-center bg-[#FFF8E7]">正在前往孵化屋...</div>;
-   }
-   if (pet.status === 'egg_hatched') {
-      return <div className="min-h-screen flex items-center justify-center bg-[#FFF8E7]">正在前往起名页面...</div>;
-   }
+  if (pet.status === 'egg_frozen' || pet.status === 'egg_heating' || pet.status === 'egg' || pet.status === 'egg_dead') {
+    return <div className="min-h-screen flex items-center justify-center bg-[#FFF8E7]">正在前往孵化屋...</div>;
+  }
+  if (pet.status === 'egg_hatched') {
+    return <div className="min-h-screen flex items-center justify-center bg-[#FFF8E7]">正在前往起名页面...</div>;
+  }
 
   const currentStatus = pet.status || 'sleeping';
   const isTraveling = currentStatus === 'traveling';
@@ -206,6 +218,7 @@ export default function HomePage() {
     <div className="h-screen w-screen bg-black flex items-center justify-center overflow-hidden">
       {/* Game container — locked to 800:1422 aspect ratio */}
       <div
+        ref={gameContainerRef}
         className="relative h-full overflow-hidden"
         style={{ aspectRatio: "800 / 1422", maxWidth: "100vw" }}
       >
@@ -327,61 +340,56 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* Chat Slide-in Panel — positioned over the viewport */}
-      <AnimatePresence>
-        {showChat && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              className="fixed inset-0 z-40"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              onClick={() => setShowChat(false)}
-            >
-              <div className="absolute inset-0 bg-black/40" />
-            </motion.div>
-
-            {/* Chat Panel */}
-            <motion.div
-              className="fixed top-4 right-4 bottom-4 z-50 w-[62%] max-w-[400px]"
-              initial={{ x: "110%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "110%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="h-full rounded-2xl border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-                <ChatPanel
-                  petId={pet.id}
-                  petName={pet.name}
-                  onClose={() => setShowChat(false)}
-                />
-              </div>
-            </motion.div>
-
-            {/* Pet GIF — centered in the space left of chat panel */}
-            <motion.div
-              className="fixed inset-y-0 left-0 z-50 flex items-center justify-center pointer-events-none"
-              style={{ right: "62%" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4, delay: 0.15 }}
-            >
-              <motion.img
-                src="/images/pets/red_panda_happy.gif"
-                alt={pet.name}
-                className="h-[40vh] max-w-[80%] w-auto object-contain"
-                initial={{ y: 20 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.4, delay: 0.15 }}
-              />
-            </motion.div>
-          </>
+      {/* Chat Bottom Sheet */}
+      <Drawer.Root open={showChat} onOpenChange={(open) => {
+        setShowChat(open);
+        if (!open) setShowPetGif(false);
+      }}>
+        <Drawer.Overlay className="fixed inset-0 z-40 bg-black/40" />
+        {showPetGif && (
+          <motion.img
+            src="/images/pets/red_panda_happy.gif"
+            alt={pet.name}
+            className="fixed z-[45] h-[25vh] w-auto object-contain drop-shadow-lg pointer-events-none"
+            style={{ left: '50%', bottom: '65vh', x: '-50%' }}
+            initial={{ y: '150%' }}
+            animate={{
+              y: ['150%', '50%', '50%', '-10%', '0%'],
+              rotate: [0, 0, 0, -8, 0],
+              scale: [1, 1, 1, 1.1, 1],
+            }}
+            transition={{
+              duration: 2.2,
+              ease: 'easeOut',
+              times: [0, 0.15, 0.6, 0.85, 1],
+            }}
+          />
         )}
-      </AnimatePresence>
+        <Drawer.Portal>
+          <Drawer.Content
+            className="fixed left-0 right-0 mx-auto z-50 flex flex-col bg-[#FFF8E7] border-t-2 border-x-2 border-black rounded-t-2xl shadow-[0px_-4px_20px_rgba(0,0,0,0.15)] outline-none"
+            style={{
+              width: `min(calc(100vw - 16px), calc(100vh * 800 / 1422 - 16px))`,
+              height: '65vh',
+              bottom: '-2px',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+            }}
+          >
+            <Drawer.Handle className="mx-auto mt-2 mb-1 h-1.5 w-12 rounded-full bg-black/30" />
+            <Drawer.Title className="px-4 py-2 font-black text-lg text-black border-b-2 border-black bg-white shrink-0 rounded-t-xl">
+              与{pet.name}聊天
+            </Drawer.Title>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <ChatPanel
+                petId={pet.id}
+                petName={pet.name}
+                onClose={() => setShowChat(false)}
+                hideHeader
+              />
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
     </div>
   );
 }
