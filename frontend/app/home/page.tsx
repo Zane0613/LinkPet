@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 import HandDrawnModal from "@/components/HandDrawnModal";
 import DiaryViewer from "@/components/DiaryViewer";
+import ChatPanel from "@/components/ChatPanel";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface Pet {
@@ -38,6 +39,9 @@ export default function HomePage() {
   const [newDiaries, setNewDiaries] = useState<Diary[]>([]);
   const [showDiaryPrompt, setShowDiaryPrompt] = useState(false);
   const [showDiaryViewer, setShowDiaryViewer] = useState(false);
+  
+  // Chat Panel State
+  const [showChat, setShowChat] = useState(false);
   
   const petRef = useRef<Pet | null>(null);
   const isViewingDiaryRef = useRef(false);
@@ -252,7 +256,7 @@ export default function HomePage() {
               </span>
             </Link>
             
-            <Link href="/chat" className="group relative hover:scale-105 transition-transform duration-300">
+            <button onClick={() => setShowChat(true)} className="group relative hover:scale-105 transition-transform duration-300">
               <img 
                 src="/images/ui/chat_btn.png" 
                 alt="聊天" 
@@ -266,7 +270,7 @@ export default function HomePage() {
               <span className="absolute inset-0 flex items-center justify-center font-zcool text-black text-lg md:text-xl pointer-events-none pb-1">
                 聊天
               </span>
-            </Link>
+            </button>
 
             <Link href="/social" className="group relative hover:scale-105 transition-transform duration-300">
               <div className="px-5 py-2 bg-white border-2 border-black rounded-xl font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center h-12 md:h-14">
@@ -303,7 +307,7 @@ export default function HomePage() {
                     transition={{ duration: 0.5 }}
                     // Adjust sizing to be a sprite on the floor
                     className="absolute bottom-20 left-1/2 transform -translate-x-1/2 h-[35vh] w-auto object-contain cursor-pointer hover:scale-105 transition-transform"
-                    onClick={() => router.push('/chat')}
+                    onClick={() => setShowChat(true)}
                     onError={(e) => {
                         e.currentTarget.style.display = 'none';
                         console.error(`Failed to load pet image: ${petImage}`);
@@ -339,6 +343,53 @@ export default function HomePage() {
             />
         )}
       </motion.div>
+
+      {/* Chat Slide-in Panel */}
+      <AnimatePresence>
+        {showChat && (
+          <>
+            {/* Backdrop / Mask */}
+            <motion.div
+              className="fixed inset-0 z-40 flex items-center justify-start"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              onClick={() => setShowChat(false)}
+            >
+              <div className="absolute inset-0 bg-black/40" />
+              {/* Pet GIF on the left side, vertically centered */}
+              <motion.img
+                src="/images/pets/red_panda_happy.gif"
+                alt={pet.name}
+                className="relative z-10 h-[40vh] w-auto object-contain ml-4 pointer-events-none"
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -30 }}
+                transition={{ duration: 0.4, delay: 0.15 }}
+              />
+            </motion.div>
+
+            {/* Chat Panel (right side, with padding and rounded corners) */}
+            <motion.div
+              className="fixed top-4 right-4 bottom-4 z-50 w-[62%] max-w-[400px]"
+              initial={{ x: "110%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "110%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="h-full rounded-2xl border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                <ChatPanel
+                  petId={pet.id}
+                  petName={pet.name}
+                  onClose={() => setShowChat(false)}
+                />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
