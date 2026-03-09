@@ -4,7 +4,14 @@ from typing import List
 class Settings(BaseSettings):
     PROJECT_NAME: str = "LinkPet API"
     API_V1_STR: str = "/api/v1"
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://0.0.0.0:3000"]
+    BACKEND_CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://0.0.0.0:3000",
+        "http://0.0.0.0:3001",
+        "http://0.0.0.0:3002"
+    ]
     
     # Database
     DATABASE_URL: str = "sqlite:///./linkpet.db"
