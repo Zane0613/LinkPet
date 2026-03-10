@@ -1,0 +1,44 @@
+{
+  "reading→eating": {
+    "gifs":    ["right_walking", "right_walking", "right_walking"],
+    "lefts":   ["13%", "29%", "7%", "27%"],
+    "bottoms": ["16%", "26%", "39%", "49%"],
+    "widths":  ["22%", "24%", "28%", "30%"],
+    "times":   [0, 0.33, 0.67, 1]
+  },
+  "eating→reading": {
+    "gifs":    ["left_walking", "front_walking", "left_walking"],
+    "lefts":   ["27%", "7%", "29%", "13%"],
+    "bottoms": ["49%", "39%", "26%", "16%"],
+    "widths":  ["30%", "28%", "24%", "22%"],
+    "times":   [0, 0.33, 0.67, 1]
+  },
+  "eating→sleeping": {
+    "gifs":    ["back_walking", "back_walking"],
+    "lefts":   ["27%", "74%", "59%"],
+    "bottoms": ["49%", "66%", "80%"],
+    "widths":  ["30%", "24%", "20%"],
+    "times":   [0, 0.5, 1]
+  },
+  "sleeping→eating": {
+    "gifs":    ["front_walking", "front_walking"],
+    "lefts":   ["59%", "74%", "27%"],
+    "bottoms": ["80%", "66%", "49%"],
+    "widths":  ["20%", "24%", "30%"],
+    "times":   [0, 0.5, 1]
+  },
+  "reading→sleeping": {
+    "gifs":    ["back_walking", "back_walking", "back_walking"],
+    "lefts":   ["13%", "29%", "74%", "59%"],
+    "bottoms": ["16%", "26%", "66%", "80%"],
+    "widths":  ["22%", "24%", "24%", "20%"],
+    "times":   [0, 0.25, 0.6, 1]
+  },
+  "sleeping→reading": {
+    "gifs":    ["front_walking", "front_walking", "front_walking"],
+    "lefts":   ["59%", "74%", "29%", "13%"],
+    "bottoms": ["80%", "66%", "26%", "16%"],
+    "widths":  ["20%", "24%", "24%", "22%"],
+    "times":   [0, 0.4, 0.75, 1]
+  }
+}

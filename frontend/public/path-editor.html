@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pet Walk Path Editor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+  h1 { font-size: 18px; margin-bottom: 8px; color: #e94560; letter-spacing: 1px; }
+  .instructions {
+    font-size: 12px; color: #777; margin-bottom: 12px; text-align: center; line-height: 1.5;
+  }
+  .instructions kbd {
+    background: #333; padding: 1px 5px; border-radius: 3px; font-size: 11px; border: 1px solid #555;
+  }
+  .container { display: flex; gap: 20px; align-items: flex-start; max-width: 100vw; }
+  .canvas-wrap {
+    position: relative; cursor: crosshair;
+    border: 2px solid #e94560; border-radius: 8px; overflow: hidden; flex-shrink: 0;
+  }
+  .canvas-wrap img#bgImg { display: block; height: 78vh; width: auto; }
+  .pet-preview {
+    position: absolute; pointer-events: none; z-index: 5;
+    height: auto; object-fit: contain;
+    transform: translate(-50%, 50%);
+    display: none;
+  }
+  .ghost-sprite {
+    position: absolute; pointer-events: none; z-index: 4;
+    height: auto; object-fit: contain;
+    transform: translate(-50%, 50%);
+    opacity: 0.5;
+    filter: drop-shadow(0 0 4px rgba(255,255,255,0.5));
+  }
+  canvas {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;
+  }
+  .panel {
+    background: #16213e; border: 1px solid #333; border-radius: 8px;
+    padding: 14px; min-width: 420px; max-height: 82vh; overflow-y: auto;
+  }
+  .panel h2 {
+    font-size: 13px; color: #e94560; margin-bottom: 8px;
+    border-bottom: 1px solid #333; padding-bottom: 6px;
+  }
+  .path-select { margin-bottom: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .path-select label { font-size: 12px; color: #999; }
+  .path-select select, .gif-select {
+    background: #1a1a2e; color: #e0e0e0; border: 1px solid #555;
+    padding: 4px 6px; border-radius: 4px; font-family: inherit; font-size: 11px;
+  }
+  .point-list { list-style: none; }
+  .point-item {
+    background: #1a1a2e; border-radius: 6px; margin-bottom: 6px; padding: 8px 10px;
+    border: 1px solid #2a2a4e;
+  }
+  .point-item:hover { border-color: #444; }
+  .point-row1 { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .point-row1 .idx { color: #e94560; font-weight: bold; min-width: 18px; font-size: 13px; }
+  .point-row1 .coords { color: #7ec8e3; flex: 1; font-size: 12px; }
+  .point-row1 button {
+    background: none; border: 1px solid #555; color: #e94560; cursor: pointer;
+    padding: 1px 6px; border-radius: 3px; font-size: 10px;
+  }
+  .point-row1 button:hover { background: #e94560; color: #fff; }
+  .point-row2 { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .point-row2 label { color: #999; min-width: 36px; }
+  .point-row2 input[type="range"] {
+    flex: 1; height: 4px; accent-color: #e94560; cursor: pointer;
+  }
+  .point-row2 .val { color: #ffdd57; min-width: 32px; text-align: right; }
+  .segment-row {
+    display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+    background: #12122a; border-radius: 4px; margin-bottom: 2px; font-size: 11px;
+  }
+  .segment-row .seg-label { color: #666; min-width: 50px; }
+  .segment-row .seg-arrow { color: #555; }
+  .output {
+    margin-top: 12px; background: #0f0f23; border: 1px solid #333; border-radius: 6px;
+    padding: 10px; font-size: 11px; white-space: pre; overflow-x: auto;
+    color: #7ec8e3; line-height: 1.4; user-select: all; max-height: 200px;
+  }
+  .btn-row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .btn-row button {
+    padding: 5px 12px; border: 1px solid #e94560; background: transparent;
+    color: #e94560; border-radius: 4px; cursor: pointer; font-size: 11px; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .btn-row button:hover { background: #e94560; color: #fff; }
+  .btn-row button.danger { border-color: #ff6b6b; color: #ff6b6b; }
+  .btn-row button.danger:hover { background: #ff6b6b; color: #fff; }
+  .btn-row button.preview { border-color: #00ff88; color: #00ff88; }
+  .btn-row button.preview:hover { background: #00ff88; color: #1a1a2e; }
+  .btn-row button.preview.playing { background: #00ff88; color: #1a1a2e; }
+</style>
+</head>
+<body>
+
+<h1>Pet Walk Path Editor</h1>
+<p class="instructions">
+  <kbd>Click</kbd> image to add waypoint &nbsp;
+  <kbd>Drag</kbd> to move &nbsp;
+  <kbd>Right-click</kbd> to delete &nbsp;
+  <kbd>Preview</kbd> to animate
+</p>
+
+<div class="container">
+  <div class="canvas-wrap" id="canvasWrap">
+    <img src="/images/backgrounds/home-bg.gif" id="bgImg" draggable="false">
+    <img id="petPreview" class="pet-preview" src="" alt="">
+    <canvas id="overlay"></canvas>
+  </div>
+
+  <div class="panel">
+    <div class="path-select">
+      <label>Path:</label>
+      <select id="pathSelect">
+        <option value="sleeping→eating">sleeping → eating</option>
+        <option value="eating→sleeping">eating → sleeping</option>
+        <option value="reading→eating">reading → eating</option>
+        <option value="eating→reading">eating → reading</option>
+        <option value="reading→sleeping">reading → sleeping</option>
+        <option value="sleeping→reading">sleeping → reading</option>
+      </select>
+    </div>
+
+    <h2>Waypoints & Segments</h2>
+    <div id="waypointPanel"></div>
+
+    <div class="btn-row">
+      <button onclick="clearPoints()" class="danger">Clear</button>
+      <button onclick="toggleGhosts()" id="ghostBtn" style="border-color:#ffdd57;color:#ffdd57">👻 Sprites ON</button>
+      <button onclick="previewAnimation()" class="preview" id="previewBtn">▶ Preview</button>
+    </div>
+    <div class="btn-row" style="margin-top:6px">
+      <button onclick="saveToJSON()" style="border-color:#00d4ff;color:#00d4ff;font-weight:bold">💾 Save All</button>
+      <button onclick="loadAllFromJSON()" style="border-color:#999;color:#999">↻ Reload</button>
+      <button onclick="copyOutput()">Copy Code</button>
+    </div>
+    <span id="statusMsg" style="font-size:11px;margin-top:6px;display:inline-block;transition:opacity 0.3s;opacity:0">&nbsp;</span>
+
+    <div class="output" id="output">// Click on the image to add points...</div>
+  </div>
+</div>
+
+<script>
+const WALK_GIFS = ['front_walking', 'back_walking', 'left_walking', 'right_walking'];
+const TEMPLATE_ID = 'red_panda';
+const WALK_DURATION = 3;
+const API_BASE = 'http://localhost:7860/api/v1/dev';
+
+let LOADED_PATHS = {};
+
+const img = document.getElementById('bgImg');
+const canvas = document.getElementById('overlay');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('canvasWrap');
+const waypointPanel = document.getElementById('waypointPanel');
+const output = document.getElementById('output');
+const pathSelect = document.getElementById('pathSelect');
+const petPreview = document.getElementById('petPreview');
+
+const allPaths = {};
+let currentPathKey = pathSelect.value;
+let points = [];   // { left, bottom, width, overlayGif }
+let segGifs = [];   // one per segment
+let showGhosts = true;
+let draggingIdx = -1;
+let wasDragging = false;
+let animFrameId = null;
+
+const POINT_RADIUS = 8;
+
+function getImgRect() { return img.getBoundingClientRect(); }
+
+function pxToPercent(px_x, px_y) {
+  const r = getImgRect();
+  return { left: Math.round((px_x / r.width) * 100), bottom: Math.round((1 - px_y / r.height) * 100) };
+}
+function percentToPx(l, b) {
+  const r = getImgRect();
+  return { x: (l / 100) * r.width, y: (1 - b / 100) * r.height };
+}
+
+function resizeCanvas() {
+  const r = getImgRect();
+  canvas.width = r.width;
+  canvas.height = r.height;
+  draw();
+  renderGhosts();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (points.length === 0) return;
+
+  ctx.beginPath();
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 4]);
+  for (let i = 0; i < points.length; i++) {
+    const { x, y } = percentToPx(points[i].left, points[i].bottom);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const r = getImgRect();
+  points.forEach((p, i) => {
+    const { x, y } = percentToPx(p.left, p.bottom);
+    const w = (p.width / 100) * r.width;
+
+    // Width indicator ring
+    ctx.beginPath();
+    ctx.arc(x, y, w / 2, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,221,87,0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Point
+    ctx.beginPath();
+    ctx.arc(x, y, POINT_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = i === 0 ? '#00ff88' : i === points.length - 1 ? '#e94560' : '#ffdd57';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${i + 1}`, x, y - 14);
+
+    // Coords
+    const label = `${p.left}%,${p.bottom}% w:${p.width}%`;
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(x - tw / 2 - 3, y + 12, tw + 6, 14);
+    ctx.fillStyle = '#7ec8e3';
+    ctx.font = '10px monospace';
+    ctx.fillText(label, x, y + 23);
+  });
+
+  // Segment GIF labels
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = percentToPx(points[i].left, points[i].bottom);
+    const p2 = percentToPx(points[i + 1].left, points[i + 1].bottom);
+    const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+    const gifName = (segGifs[i] || 'front_walking').replace('_walking', '');
+    ctx.fillStyle = 'rgba(233,69,96,0.8)';
+    const tw2 = ctx.measureText(gifName).width;
+    ctx.fillRect(mx - tw2 / 2 - 3, my - 8, tw2 + 6, 14);
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(gifName, mx, my + 3);
+  }
+}
+
+function buildPanel() {
+  waypointPanel.innerHTML = '';
+  points.forEach((p, i) => {
+    // Segment GIF selector BEFORE this point (between i-1 and i)
+    if (i > 0) {
+      const seg = document.createElement('div');
+      seg.className = 'segment-row';
+      seg.innerHTML = `
+        <span class="seg-label">Seg ${i}</span>
+        <span class="seg-arrow">${i} → ${i + 1}</span>
+        <select class="gif-select" data-seg="${i - 1}">
+          ${WALK_GIFS.map(g => `<option value="${g}" ${segGifs[i - 1] === g ? 'selected' : ''}>${g}</option>`).join('')}
+        </select>
+      `;
+      seg.querySelector('select').addEventListener('change', (e) => {
+        segGifs[parseInt(e.target.dataset.seg)] = e.target.value;
+        draw();
+        updateOutput();
+      });
+      waypointPanel.appendChild(seg);
+    }
+
+    const overlayGif = p.overlayGif || segGifs[Math.min(i, segGifs.length - 1)] || 'front_walking';
+    const item = document.createElement('div');
+    item.className = 'point-item';
+    item.innerHTML = `
+      <div class="point-row1">
+        <span class="idx">${i + 1}</span>
+        <span class="coords">left:${p.left}% bottom:${p.bottom}%</span>
+        <button data-rm="${i}">✕</button>
+      </div>
+      <div class="point-row2">
+        <label>width</label>
+        <input type="range" min="10" max="50" value="${p.width}" data-widx="${i}">
+        <span class="val">${p.width}%</span>
+      </div>
+      <div class="point-row2">
+        <label>sprite</label>
+        <select class="gif-select" data-oidx="${i}">
+          ${WALK_GIFS.map(g => `<option value="${g}" ${overlayGif === g ? 'selected' : ''}>${g.replace('_walking','')}</option>`).join('')}
+        </select>
+      </div>
+    `;
+    item.querySelector('button').addEventListener('click', () => removePoint(i));
+    const slider = item.querySelector('input[type="range"]');
+    slider.addEventListener('input', (e) => {
+      const v = parseInt(e.target.value);
+      points[parseInt(e.target.dataset.widx)].width = v;
+      e.target.nextElementSibling.textContent = v + '%';
+      draw();
+      updateOutput();
+      renderGhosts();
+    });
+    item.querySelector('select[data-oidx]').addEventListener('change', (e) => {
+      points[parseInt(e.target.dataset.oidx)].overlayGif = e.target.value;
+      renderGhosts();
+    });
+    waypointPanel.appendChild(item);
+  });
+}
+
+function updateOutput() {
+  if (points.length < 2) { output.textContent = '// Need at least 2 points...'; return; }
+
+  const lefts = points.map(p => `"${p.left}%"`).join(', ');
+  const bottoms = points.map(p => `"${p.bottom}%"`).join(', ');
+  const widths = points.map(p => `"${p.width}%"`).join(', ');
+  const gifs = segGifs.slice(0, points.length - 1).map(g => `"${g}"`).join(', ');
+  const times = points.map((_, i) => {
+    const t = i / (points.length - 1);
+    return Math.round(t * 100) / 100;
+  }).join(', ');
+
+  output.textContent = `"${currentPathKey}": {
+  gifs:    [${gifs}],
+  lefts:   [${lefts}],
+  bottoms: [${bottoms}],
+  widths:  [${widths}],
+  times:   [${times}],
+},`;
+}
+
+function removePoint(idx) {
+  points.splice(idx, 1);
+  if (idx > 0 && idx <= segGifs.length) segGifs.splice(idx - 1, 1);
+  else if (idx === 0 && segGifs.length > 0) segGifs.splice(0, 1);
+  refresh();
+}
+
+function clearPoints() {
+  points = [];
+  segGifs = [];
+  refresh();
+}
+
+function refresh() {
+  draw();
+  buildPanel();
+  updateOutput();
+  renderGhosts();
+}
+
+function renderGhosts() {
+  wrap.querySelectorAll('.ghost-sprite').forEach(el => el.remove());
+  if (!showGhosts || points.length === 0) return;
+  const r = getImgRect();
+  points.forEach((p, i) => {
+    const gif = p.overlayGif || segGifs[Math.min(i, segGifs.length - 1)] || 'front_walking';
+    const imgEl = document.createElement('img');
+    imgEl.className = 'ghost-sprite';
+    imgEl.src = `/images/pets/${TEMPLATE_ID}_${gif}.gif`;
+    const { x, y } = percentToPx(p.left, p.bottom);
+    const wPx = (p.width / 100) * r.width;
+    imgEl.style.left = x + 'px';
+    imgEl.style.bottom = (r.height - y) + 'px';
+    imgEl.style.top = 'auto';
+    imgEl.style.width = wPx + 'px';
+    wrap.appendChild(imgEl);
+  });
+}
+
+function saveCurrent() {
+  allPaths[currentPathKey] = { points: points.map(p => ({...p})), gifs: [...segGifs] };
+}
+
+function parsePathData(ip) {
+  return {
+    points: ip.lefts.map((l, i) => ({
+      left: parseInt(l),
+      bottom: parseInt(ip.bottoms[i]),
+      width: parseInt(ip.widths[i]),
+    })),
+    gifs: [...ip.gifs],
+  };
+}
+
+function loadPath(key) {
+  if (currentPathKey && points.length > 0) saveCurrent();
+  currentPathKey = key;
+
+  if (allPaths[key] && allPaths[key].points.length > 0) {
+    points = allPaths[key].points.map(p => ({...p}));
+    segGifs = [...allPaths[key].gifs];
+  } else if (LOADED_PATHS[key]) {
+    const parsed = parsePathData(LOADED_PATHS[key]);
+    points = parsed.points;
+    segGifs = parsed.gifs;
+  } else {
+    points = [];
+    segGifs = [];
+  }
+  refresh();
+}
+
+async function loadAllFromJSON() {
+  try {
+    const res = await fetch('/walk-paths.json?' + Date.now());
+    LOADED_PATHS = await res.json();
+    loadPath(currentPathKey);
+    showStatus('Loaded from walk-paths.json');
+  } catch (e) {
+    showStatus('Failed to load: ' + e.message, true);
+  }
+}
+
+function buildSaveData() {
+  saveCurrent();
+  const out = {};
+  const allKeys = [...pathSelect.querySelectorAll('option')].map(o => o.value);
+  for (const key of allKeys) {
+    const saved = allPaths[key];
+    const source = (saved && saved.points.length > 0) ? saved : null;
+    const loaded = LOADED_PATHS[key];
+    if (source) {
+      out[key] = {
+        gifs: source.gifs.slice(0, source.points.length - 1),
+        lefts: source.points.map(p => p.left + '%'),
+        bottoms: source.points.map(p => p.bottom + '%'),
+        widths: source.points.map(p => p.width + '%'),
+        times: source.points.map((_, i) => Math.round((i / (source.points.length - 1)) * 100) / 100),
+      };
+    } else if (loaded) {
+      out[key] = loaded;
+    }
+  }
+  return out;
+}
+
+async function saveToJSON() {
+  const data = buildSaveData();
+  try {
+    const res = await fetch(API_BASE + '/walk-paths', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (result.ok) {
+      LOADED_PATHS = data;
+      showStatus('Saved to walk-paths.json ✓');
+    } else {
+      showStatus('Save failed', true);
+    }
+  } catch (e) {
+    showStatus('Save failed: ' + e.message, true);
+  }
+}
+
+function showStatus(msg, isError = false) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.style.color = isError ? '#ff6b6b' : '#00ff88';
+  el.style.opacity = '1';
+  setTimeout(() => { el.style.opacity = '0'; }, 2500);
+}
+
+function copyOutput() {
+  navigator.clipboard.writeText(output.textContent);
+  const btn = document.querySelector('.btn-row button:last-of-type');
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy Code', 1200);
+}
+
+function toggleGhosts() {
+  showGhosts = !showGhosts;
+  const btn = document.getElementById('ghostBtn');
+  btn.textContent = showGhosts ? '👻 Sprites ON' : '👻 Sprites OFF';
+  btn.style.opacity = showGhosts ? '1' : '0.5';
+  renderGhosts();
+}
+
+// --- Preview Animation ---
+let previewPlaying = false;
+
+function previewAnimation() {
+  if (previewPlaying) { stopPreview(); return; }
+  if (points.length < 2) return;
+
+  previewPlaying = true;
+  const btn = document.getElementById('previewBtn');
+  btn.textContent = '⏹ Stop';
+  btn.classList.add('playing');
+
+  const r = getImgRect();
+  const totalMs = WALK_DURATION * 1000;
+  const startTime = performance.now();
+
+  // Build normalized times
+  const normTimes = points.map((_, i) => i / (points.length - 1));
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function frame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / totalMs, 1);
+
+    // Find which segment we're in
+    let segIdx = 0;
+    for (let i = 0; i < normTimes.length - 1; i++) {
+      if (progress >= normTimes[i] && progress <= normTimes[i + 1]) { segIdx = i; break; }
+    }
+    const segStart = normTimes[segIdx], segEnd = normTimes[segIdx + 1];
+    const segT = segEnd > segStart ? (progress - segStart) / (segEnd - segStart) : 0;
+
+    const p1 = points[segIdx], p2 = points[segIdx + 1];
+    const curLeft = lerp(p1.left, p2.left, segT);
+    const curBottom = lerp(p1.bottom, p2.bottom, segT);
+    const curWidth = lerp(p1.width, p2.width, segT);
+
+    const gif = segGifs[segIdx] || 'front_walking';
+    const src = `/images/pets/${TEMPLATE_ID}_${gif}.gif`;
+    if (petPreview.getAttribute('src') !== src) petPreview.src = src;
+
+    const { x, y } = percentToPx(curLeft, curBottom);
+    const wPx = (curWidth / 100) * r.width;
+
+    petPreview.style.display = 'block';
+    petPreview.style.left = x + 'px';
+    petPreview.style.bottom = (r.height - y) + 'px';
+    petPreview.style.top = 'auto';
+    petPreview.style.width = wPx + 'px';
+
+    if (progress < 1) {
+      animFrameId = requestAnimationFrame(frame);
+    } else {
+      setTimeout(stopPreview, 500);
+    }
+  }
+
+  animFrameId = requestAnimationFrame(frame);
+}
+
+function stopPreview() {
+  previewPlaying = false;
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  animFrameId = null;
+  petPreview.style.display = 'none';
+  const btn = document.getElementById('previewBtn');
+  btn.textContent = '▶ Preview';
+  btn.classList.remove('playing');
+}
+
+// --- Mouse Interactions ---
+wrap.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  const r = getImgRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  draggingIdx = -1;
+  wasDragging = false;
+  for (let i = 0; i < points.length; i++) {
+    const { x, y } = percentToPx(points[i].left, points[i].bottom);
+    if (Math.hypot(x - mx, y - my) < POINT_RADIUS + 5) {
+      draggingIdx = i;
+      e.preventDefault();
+      return;
+    }
+  }
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (draggingIdx < 0) return;
+  wasDragging = true;
+  const r = getImgRect();
+  const mx = Math.max(0, Math.min(r.width, e.clientX - r.left));
+  const my = Math.max(0, Math.min(r.height, e.clientY - r.top));
+  const pct = pxToPercent(mx, my);
+  points[draggingIdx].left = pct.left;
+  points[draggingIdx].bottom = pct.bottom;
+  draw();
+  buildPanel();
+  updateOutput();
+  renderGhosts();
+});
+
+window.addEventListener('mouseup', () => {
+  draggingIdx = -1;
+});
+
+wrap.addEventListener('click', (e) => {
+  if (wasDragging) { wasDragging = false; return; }
+  const r = getImgRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+
+  // Check if clicking near existing point
+  for (let i = 0; i < points.length; i++) {
+    const { x, y } = percentToPx(points[i].left, points[i].bottom);
+    if (Math.hypot(x - mx, y - my) < POINT_RADIUS + 5) return;
+  }
+
+  const pct = pxToPercent(mx, my);
+  const newPt = { left: pct.left, bottom: pct.bottom, width: 26 };
+
+  if (points.length >= 2) {
+    // Auto-pick width by averaging neighbors
+    const prev = points[points.length - 2], next = points[points.length - 1];
+    newPt.width = Math.round((prev.width + next.width) / 2);
+    points.splice(points.length - 1, 0, newPt);
+    // Add segment gif
+    const prevGif = segGifs[segGifs.length - 1] || 'front_walking';
+    segGifs.splice(segGifs.length - 1, 0, prevGif);
+  } else {
+    points.push(newPt);
+    if (points.length >= 2) segGifs.push('front_walking');
+  }
+  refresh();
+});
+
+wrap.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  const r = getImgRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  let closest = -1, minD = Infinity;
+  points.forEach((p, i) => {
+    const { x, y } = percentToPx(p.left, p.bottom);
+    const d = Math.hypot(x - mx, y - my);
+    if (d < minD) { minD = d; closest = i; }
+  });
+  if (closest >= 0 && minD < 30) removePoint(closest);
+});
+
+pathSelect.addEventListener('change', (e) => { stopPreview(); loadPath(e.target.value); });
+
+async function init() {
+  resizeCanvas();
+  await loadAllFromJSON();
+}
+img.addEventListener('load', init);
+window.addEventListener('resize', resizeCanvas);
+if (img.complete) init();
+</script>
+</body>
+</html>

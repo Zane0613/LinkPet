@@ -1,36 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
 type PetStatus = "reading" | "eating" | "sleeping" | "traveling" | string;
 
-interface Position {
-  left: string;
-  bottom: string;
+interface WalkPath {
+  gifs: string[];
+  lefts: string[];
+  bottoms: string[];
+  widths: string[];
+  times: number[];
 }
 
-const STATUS_POSITIONS: Record<string, Position> = {
-  reading:  { left: "18%", bottom: "12%" },
-  eating:   { left: "55%", bottom: "32%" },
-  sleeping: { left: "38%", bottom: "60%" },
+const DEFAULT_PATH: WalkPath = {
+  gifs: ["front_walking"],
+  lefts: ["50%", "50%"],
+  bottoms: ["50%", "20%"],
+  widths: ["26%", "26%"],
+  times: [0, 1],
 };
-
-const DEFAULT_POSITION: Position = { left: "50%", bottom: "20%" };
-
-function getPosition(status: string): Position {
-  return STATUS_POSITIONS[status] || DEFAULT_POSITION;
-}
-
-function getWalkingGif(from: Position, to: Position): string {
-  const dx = parseFloat(to.left) - parseFloat(from.left);
-  const dy = parseFloat(to.bottom) - parseFloat(from.bottom);
-
-  if (Math.abs(dx) > Math.abs(dy)) {
-    return dx > 0 ? "right_walking" : "left_walking";
-  }
-  return dy > 0 ? "back_walking" : "front_walking";
-}
 
 interface PetSpriteProps {
   status: PetStatus;
@@ -39,19 +28,23 @@ interface PetSpriteProps {
   onClick?: () => void;
 }
 
-const WALK_DURATION = 2;
+const WALK_DURATION = 3;
 const FADE_DURATION = 400;
 
 export default function PetSprite({ status, petName, templateId = "red_panda", onClick }: PetSpriteProps) {
   const prevStatusRef = useRef<string | null>(null);
   const [phase, setPhase] = useState<"idle" | "walking" | "fade-in">("idle");
   const [sceneStatus, setSceneStatus] = useState(status);
-  const [walkFrom, setWalkFrom] = useState<Position>(getPosition(status));
-  const [walkTo, setWalkTo] = useState<Position>(getPosition(status));
-  const [walkingGif, setWalkingGif] = useState("");
+  const [walkPath, setWalkPath] = useState<WalkPath | null>(null);
+  const [walkGifIdx, setWalkGifIdx] = useState(0);
+  const walkPathsRef = useRef<Record<string, WalkPath>>({});
 
-  // Preload all images on mount
   useEffect(() => {
+    fetch("/walk-paths.json")
+      .then(r => r.json())
+      .then(data => { walkPathsRef.current = data; })
+      .catch(() => {});
+
     const statuses = ["reading", "eating", "sleeping"];
     const walks = ["back_walking", "front_walking", "left_walking", "right_walking"];
     [...statuses, ...walks].forEach(s => {
@@ -76,17 +69,21 @@ export default function PetSprite({ status, petName, templateId = "red_panda", o
       return;
     }
 
-    const fromPos = getPosition(prev === "traveling" ? status : prev);
-    const toPos = getPosition(status);
-    const walkGif = getWalkingGif(fromPos, toPos);
+    const prevStatus = prev === "traveling" ? status : prev;
+    const key = `${prevStatus}→${status}`;
+    const path = walkPathsRef.current[key] || DEFAULT_PATH;
 
-    setWalkFrom(fromPos);
-    setWalkTo(toPos);
-    setWalkingGif(walkGif);
+    setWalkPath(path);
+    setWalkGifIdx(0);
     setPhase("walking");
 
+    const gifTimers: ReturnType<typeof setTimeout>[] = [];
+    for (let i = 1; i < path.gifs.length; i++) {
+      const switchAt = path.times[i] * WALK_DURATION * 1000;
+      gifTimers.push(setTimeout(() => setWalkGifIdx(i), switchAt));
+    }
+
     const walkTimer = setTimeout(() => {
-      // Walking done — update scene src while still invisible, then fade in
       setSceneStatus(status);
       setPhase("fade-in");
 
@@ -97,26 +94,28 @@ export default function PetSprite({ status, petName, templateId = "red_panda", o
       return () => clearTimeout(fadeTimer);
     }, WALK_DURATION * 1000);
 
-    return () => clearTimeout(walkTimer);
+    return () => {
+      clearTimeout(walkTimer);
+      gifTimers.forEach(clearTimeout);
+    };
   }, [status]);
 
   const emptyRoomBg = "/images/backgrounds/home-bg.gif";
   const sceneGif = `/images/pets/${templateId}_${sceneStatus}.gif`;
-  const walkGifSrc = `/images/pets/${templateId}_${walkingGif}.gif`;
+  const currentWalkGif = walkPath ? walkPath.gifs[walkGifIdx] || walkPath.gifs[0] : "front_walking";
+  const walkGifSrc = `/images/pets/${templateId}_${currentWalkGif}.gif`;
 
   const isWalking = phase === "walking";
   const sceneVisible = phase === "idle" && sceneStatus !== "traveling";
 
   return (
     <>
-      {/* Layer 1: empty room — always in DOM */}
       <img
         src={emptyRoomBg}
         alt="Home Background"
         className="absolute inset-0 w-full h-full object-cover"
       />
 
-      {/* Layer 2: scene GIF — always in DOM, visibility via opacity */}
       <img
         src={sceneGif}
         alt={`${petName} ${sceneStatus}`}
@@ -129,17 +128,28 @@ export default function PetSprite({ status, petName, templateId = "red_panda", o
         onClick={onClick}
       />
 
-      {/* Layer 3: walking sprite */}
-      {isWalking && (
+      {isWalking && walkPath && (
         <motion.img
-          key={`walk-${walkingGif}-${status}`}
+          key={`walk-${status}`}
           src={walkGifSrc}
           alt={`${petName} walking`}
-          className="absolute h-[28vh] w-auto object-contain cursor-pointer z-10"
-          style={{ transform: "translateX(-50%)" }}
-          initial={{ left: walkFrom.left, bottom: walkFrom.bottom }}
-          animate={{ left: walkTo.left, bottom: walkTo.bottom }}
-          transition={{ duration: WALK_DURATION, ease: "easeInOut" }}
+          className="absolute h-auto object-contain cursor-pointer z-10"
+          style={{ transform: "translate(-50%, 50%)" }}
+          initial={{
+            left: walkPath.lefts[0],
+            bottom: walkPath.bottoms[0],
+            width: walkPath.widths[0],
+          }}
+          animate={{
+            left: walkPath.lefts,
+            bottom: walkPath.bottoms,
+            width: walkPath.widths,
+          }}
+          transition={{
+            duration: WALK_DURATION,
+            ease: "linear",
+            times: walkPath.times,
+          }}
           onClick={onClick}
         />
       )}
